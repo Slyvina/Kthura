@@ -38,3 +38,12 @@
 # Mac
 .DS_Store
 ._*
+
+# Visual Studio build
+*.recipe
+*.ilk
+*.tlog
+Kthura2XML/x64/Debug/Kthura2XML.vcxproj.FileListAbsolute.txt
+*.idb
+*.log
+*.pdb
