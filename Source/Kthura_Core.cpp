@@ -64,7 +64,7 @@ namespace Slyvina {
 			if (_modified && _autoRemap) {
 				TotalRemap();
 				_modified = false;
-			} else {
+			} else if (!_autoRemap) {
 				_modified = true;
 			}
 		}
@@ -78,6 +78,16 @@ namespace Slyvina {
 			delete k;
 			PerformAutoRemap();
 		}
+		void KthuraLayer::Kill(std::string Tag,bool ignorenonexistent) {
+			Trans2Upper(Tag);
+			if (!TagMap.count(Tag)) {
+				if (ignorenonexistent) return;
+				Paniek("Trying to kill an object with a non-existent tag","Tag:"+Tag);
+				return;
+			}
+			Kill(TagMap[Tag]);
+		}
+
 		void KthuraLayer::KillAllObjects() {
 			auto _oa = _autoRemap;
 			_autoRemap = false;
@@ -98,6 +108,35 @@ namespace Slyvina {
 			for (auto o = _firstObject; o; o = o->Next()) {
 				if (TagMap.count(o->Tag())) Paniek("RemapTags(): Dupe tag (" + o->Tag() + ")");
 				TagMap[o->Tag()] = o;
+			}
+		}
+
+		void KthuraLayer::RemapLabels() {
+			_LabelMap.clear();
+			for (auto o = _firstObject; o; o = o->Next()) {
+				if (o->labels().size()) {
+					auto l{ Split(Upper(o->labels()),';') };
+					for (auto& lb : *l) _LabelMap[lb].push_back(o);
+				}
+			}
+		}
+
+		void KthuraLayer::RemapDominance() {
+			DomFirst = nullptr;
+			//for (auto o = _firstObject; o; o = o->Next()) o->DomNext = nullptr;
+			map<string, KthuraObject*> tempmap;
+			for (auto o = _firstObject; o; o = o->Next()) {
+				o->DomNext = nullptr;
+				tempmap[TrSPrintF("DOM::%09d::%09d::%09d:%09d", o->dominance(), o->y(), o->x(), o->ID())] = o;
+			}
+			KthuraObject* Last{ nullptr };
+			for (auto& dom : tempmap) {
+				if (!Last) 
+					DomFirst = dom.second;
+				else {
+					Last->DomNext = dom.second;
+					Last = dom.second;
+				}
 			}
 		}
 
@@ -141,9 +180,12 @@ namespace Slyvina {
 				y{ 0 },
 				w{ 0 },
 				h{ 0 };
+			uint32
+				dominance{ 20 };
 			std::string 
-				Tag,
-				texture;
+				Tag{""},
+				texture{""},
+				labels{""};
 			byte
 				r{ 255 },
 				g{ 255 },
@@ -196,5 +238,7 @@ namespace Slyvina {
 		KthuraObjValRP(bool, impassible);
 		KthuraObjValRP(bool, forcepassible);
 		KthuraObjVal(std::string, texture);
+		KthuraObjValRP(std::string, labels);
+		KthuraObjValRP(uint32, dominance);
 	}
 }

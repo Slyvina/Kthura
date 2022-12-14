@@ -54,12 +54,16 @@ namespace Slyvina {
 			KthuraKind _Kind;
 			uint64 _ID{ 0 };
 		public:
+			KthuraObject* DomNext{ nullptr }; // It would NOT be wise to alter this manually!
 			KthuraObject(KthuraObject* _after,KthuraLayer* _ouwe,KthuraKind _k,uint64 giveID);
 			inline KthuraObject* Next() { return _next; }
 			inline KthuraObject* Prev() { return _prev; }
 			inline KthuraLayer* Parent() { return _parent; }
 			void __KillMe(); // NEVER use this directly! ALWAYS let the kill commands of the Kthura Layer do this.
-			inline int64 ID();
+			inline int64 ID() { return _ID; }
+
+			// Yeah, these are quick defintions done by macros.
+			// I do NOT need you to tell me that this is bad practise, because I already know and I don't care!
 			KthuraProp(std::string, Tag);
 			KthuraProp(int32, x);
 			KthuraProp(int32, y);
@@ -73,6 +77,8 @@ namespace Slyvina {
 			KthuraProp(bool, impassible);
 			KthuraProp(bool, forcepassible);
 			KthuraProp(std::string, texture);
+			KthuraProp(std::string, labels);
+			KthuraProp(uint32, dominance);
 		};
 
 		class KthuraLayer {
@@ -86,19 +92,26 @@ namespace Slyvina {
 			KthuraObject* NewObject(KthuraKind k);
 			std::map<uint64, KthuraObject*> IDMap{};
 			std::map<std::string, KthuraObject*> TagMap{};
+			std::map <std::string, vector<KthuraObject*>> _LabelMap;
 		public:
+			KthuraObject* DomFirst{ nullptr };
 			void PerformAutoRemap();
 			inline void __setparent(_Kthura* ouwe) { if (!_parent) _parent = ouwe; } // Only works when not yet initized. Not for direct use			
 			void Kill(KthuraObject* obj);
+			void Kill(std::string Tag,bool ignorenonexistent=true);
 			void KillAllObjects();
 			void TotalRemap();
 			inline bool HasID(uint64 i) { return IDMap.count(i); }
 			inline bool HasTag(std::string T) { Units::Trans2Upper(T); return TagMap.count(T); }
 			void RemapID();
 			void RemapTags();
+			void RemapLabels();
+			void RemapDominance();
 			KthuraObject* Obj(uint64 i);
 			KthuraObject* NewTiledArea(int32 x = 0, int32 y = 0, int32 w = 0, int32 h = 0,std::string Texture="",std::string Tag="");
 			inline ~KthuraLayer() { KillAllObjects(); }
+			inline void AutoRemap(bool onoff) { _autoRemap = onoff; PerformAutoRemap(); }
+			inline bool AutoRemap() { return _autoRemap; }
 		};
 	}
 }
