@@ -179,9 +179,12 @@ namespace Slyvina {
 				x{ 0 },
 				y{ 0 },
 				w{ 0 },
-				h{ 0 };
+				h{ 0 },
+				animspeed{-1};
 			uint32
-				dominance{ 20 };
+				dominance{ 20 },
+				animskip{ 0 },
+				animframe{ 0 };
 			std::string 
 				Tag{""},
 				texture{""},
@@ -240,5 +243,7 @@ namespace Slyvina {
 		KthuraObjVal(std::string, texture);
 		KthuraObjValRP(std::string, labels);
 		KthuraObjValRP(uint32, dominance);
+		KthuraObjVal(uint32, animframe);
+		KthuraObjVal(int32, animspeed);
 	}
 }

@@ -79,6 +79,8 @@ namespace Slyvina {
 			KthuraProp(std::string, texture);
 			KthuraProp(std::string, labels);
 			KthuraProp(uint32, dominance);
+			KthuraProp(int32, animspeed);
+			KthuraProp(uint32, animframe);
 		};
 
 		class KthuraLayer {
