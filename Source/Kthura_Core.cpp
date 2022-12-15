@@ -531,7 +531,8 @@ namespace Slyvina {
 					}
 					if (cl) cl->AutoRemap(true);
 				} else if (nu == "OPTIONS") {
-					cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
+					//cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
+					Options = ParseUGINIE(Resource->GetString(prefix + "Options"));
 				} else if (AllowUnknown) {
 					Chat("Loaded Uknown: " << n);
 					Unknown[n] = Resource->B(ent->Name());
