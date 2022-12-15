@@ -48,3 +48,4 @@ Kthura2XML/x64/Debug/Kthura2XML.vcxproj.FileListAbsolute.txt
 *.log
 *.pdb
 Kthura2XML/BlackBox.xml
+*.enc
