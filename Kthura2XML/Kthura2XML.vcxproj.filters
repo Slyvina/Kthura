@@ -19,6 +19,12 @@
     <Filter Include="Source Files\Units">
       <UniqueIdentifier>{39b99a19-df22-4c52-afc4-5976944868ca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Units">
+      <UniqueIdentifier>{327b2462-5cfb-4d8c-95cb-b518a64545da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\JCR6">
+      <UniqueIdentifier>{a4eb58c1-a845-4954-bacd-16df5ff4d0b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Kthura2XML.cpp">
@@ -36,10 +42,28 @@
     <ClCompile Include="..\..\Units\Source\SlyvTime.cpp">
       <Filter>Source Files\Units</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source.cpp\Kthura_Export_XML.cpp">
+      <Filter>Source Files\Kthura</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Units\Source\SlyvSTOI.cpp">
+      <Filter>Source Files\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Units\Source\SlyvBank.cpp">
+      <Filter>Source Files\Units</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\JCR6\Source\JCR6_Core.cpp">
+      <Filter>Source Files\JCR6</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Headers\Kthura_Core.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Headers\Kthura_Export_XML.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Units\Headers\SlyvSTOI.hpp">
+      <Filter>Header Files\Units</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
