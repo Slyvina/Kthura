@@ -151,6 +151,7 @@
     <ClCompile Include="Kthura2XML.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Units\Headers\SlyvGINIE.hpp" />
     <ClInclude Include="..\..\Units\Headers\SlyvSTOI.hpp" />
     <ClInclude Include="..\Headers\Kthura_Core.hpp" />
     <ClInclude Include="..\Headers\Kthura_Export_XML.hpp" />
