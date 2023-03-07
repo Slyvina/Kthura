@@ -1,8 +1,8 @@
 // Lic:
 // Kthura/Source/Kthura_Core.cpp
 // Slyvina - Kthura Core
-// version: 22.12.15
-// Copyright (C) 2022 Jeroen P. Broks
+// version: 23.03.06
+// Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -22,7 +22,7 @@
 #include <SlyvSTOI.hpp>
 #include <Kthura_Core.hpp>
 
-#define KthuraCoreDebug
+#undef KthuraCoreDebug
 
 
 
@@ -33,7 +33,7 @@
 #ifdef KthuraCoreDebug
 #define Chat(msg) cout << "\x1b[33mKthura Debug>\t\x1b[0m" << msg << endl
 #else
-define Chat(msg)
+#define Chat(msg)
 #endif
 using namespace std;
 using namespace Slyvina::Units;
@@ -282,6 +282,7 @@ namespace Slyvina {
 			_Obj = std::make_unique<__KthuraObjectData>();
 			if (k == KthuraKind::Actor) _Act = std::make_unique<__KthuraActorData>();
 			_ID = _giveID;
+			_Kind = k;
 		}
 
 		void KthuraObject::__KillMe() {
@@ -543,7 +544,7 @@ namespace Slyvina {
 		Kthura LoadKthura(std::string resfile, std::string prefix) {
 			auto J{ JCR6_Dir(resfile) };
 			if (Last()->Error) {
-				Paniek("JCR6 error", "Kthura Map file:" + resfile + ";Prefix:" + prefix); return nullptr;
+				Paniek("JCR6 error", "Kthura Map file:" + ChReplace(resfile,':','.') + ";Prefix:" + prefix + ";JCR6:" + Last()->ErrorMessage); return nullptr;
 			}
 			return LoadKthura(J, prefix);
 		}
