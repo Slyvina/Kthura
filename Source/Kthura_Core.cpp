@@ -517,7 +517,7 @@ namespace Slyvina {
 								if (cl) cl->AutoRemap(true);
 								if (!HasLayer(val)) { Paniek("Trying to switch to non-existent layer", TrSPrintF("Line:%d;Layer:%s", line, val.c_str())); return; }
 								cl = Layer(val);
-							} else if (fld == "BLOCKMAPGRID") {
+							} else if (fld == "BLOCKMAPGRID" || fld=="GRID") {
 								if (!cl) { Paniek("Grid definition without a layer", TrSPrintF("Line:%d", line)); return; }
 								auto cs = Split(val, 'x');
 								if (cs->size() < 2) SyntaxError;
