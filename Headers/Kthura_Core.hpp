@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Headers/Kthura_Core.hpp
 // Slyvina - Kthura Core (header)
-// version: 23.03.06
+// version: 23.09.26
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -72,7 +72,8 @@ namespace Slyvina {
 			KthuraLayer* Layer(std::string Lay);
 			inline std::vector<std::string>* Layers() { if (!LayersRemapped) _LayerRemap(); return &_LayersMap; }
 			KthuraLayer* NewLayer(std::string Lay, bool nopanic = false);
-			inline void KillLayer(std::string Lay, bool ignoreifnonexistent = false);
+			void RenameLayer(std::string OldLay, std::string NewLay, bool nopanic = false);
+			void KillLayer(std::string Lay, bool ignoreifnonexistent = false);
 
 			_Kthura(Slyvina::JCR6::JT_Dir Resource, std::string prefix = "");
 			inline _Kthura() { NewLayer("__BASE"); }
@@ -147,6 +148,7 @@ namespace Slyvina {
 			std::map<std::string, KthuraObject*> TagMap{};
 			std::map<std::string, std::vector<KthuraObject*>> _LabelMap;
 		public:
+			bool DontKill{false};
 			KthuraObject* DomFirst{ nullptr };
 			uint32
 				gridx{ 32 },
@@ -169,7 +171,7 @@ namespace Slyvina {
 			KthuraObject* Obj(uint64 i);
 			KthuraObject* NewTiledArea(int32 x = 0, int32 y = 0, int32 w = 0, int32 h = 0,std::string Texture="",std::string Tag="");
 			KthuraObject* NewObstacle(int32 x = 0, int32 y = 0, std::string Texture = "", std::string Tag = "");
-			inline ~KthuraLayer() { KillAllObjects(); }
+			inline ~KthuraLayer() { if (DontKill) KillAllObjects(); }
 			inline void AutoRemap(bool onoff) { _autoRemap = onoff; PerformAutoRemap(); }
 			inline bool AutoRemap() { return _autoRemap; }			
 		};

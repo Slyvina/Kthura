@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Core.cpp
 // Slyvina - Kthura Core
-// version: 23.05.11
+// version: 23.09.26
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -93,6 +93,29 @@ namespace Slyvina {
 			}
 			LayersRemapped = false;
 			return &_Layers[Lay];
+		}
+
+		void _Kthura::RenameLayer(std::string OldLay, std::string NewLay, bool nopanic) {
+			Trans2Upper(OldLay);
+			Trans2Upper(NewLay);
+			if (!_Layers.count(OldLay)) {
+				if (!nopanic) Paniek("Can't rename a non-existent layer", OldLay + " -> " + NewLay);
+				return;
+			}
+			if (_Layers.count(NewLay)) {
+				if (!nopanic) Paniek("Can't rename a when a layer with the new name already exists!", OldLay + " -> " + NewLay);
+				return;
+			}
+			_Layers[NewLay] = _Layers[OldLay];
+			_Layers[OldLay].DontKill = true;
+			_Layers.erase(OldLay);
+		}
+
+		void _Kthura::KillLayer(std::string Lay, bool ignoreifnonexistent) {
+			Trans2Upper(Lay);
+			if (_Layers.count(Lay)) {
+				_Layers.erase(Lay);
+			}
 		}
 
 		void KthuraLayer::PerformAutoRemap() {
