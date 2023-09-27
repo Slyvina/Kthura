@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Core.cpp
 // Slyvina - Kthura Core
-// version: 23.09.26
+// version: 23.09.27
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -362,7 +362,7 @@ namespace Slyvina {
 			{KthuraKind::TiledArea,"TiledArea"},
 			{KthuraKind::Zone,"Zone"},
 			{KthuraKind::Custom,"Custom"},
-			{KthuraKind::Pivot,"Pivor"},
+			{KthuraKind::Pivot,"Pivot"},
 			{KthuraKind::Exit,"Exit"}
 		};
 

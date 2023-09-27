@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Headers/Kthura_Core.hpp
 // Slyvina - Kthura Core (header)
-// version: 23.09.26
+// version: 23.09.27
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -17,6 +17,7 @@
 // misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 // EndLic
+
 #pragma once
 #include <map>
 #include <string>
