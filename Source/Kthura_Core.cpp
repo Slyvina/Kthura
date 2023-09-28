@@ -197,9 +197,11 @@ namespace Slyvina {
 			}
 			KthuraObject* Last{ nullptr };
 			for (auto& dom : tempmap) {
-				if (!Last)
+				if (!Last) {
 					DomFirst = dom.second;
-				else {
+					Last = dom.second;
+
+				} else {
 					Last->DomNext = dom.second;
 					Last = dom.second;
 				}
@@ -229,9 +231,11 @@ namespace Slyvina {
 
 		void KthuraLayer::TotalRemap() {
 			RemapTags();
-#pragma message ("Still gotta do remapping by dominance")
+			RemapDominance();
+//#pragma message ("Still gotta do remapping by dominance")
 			RemapID();
 #pragma message ("Still gotta do remapping by labels")
+
 			_modified = false;
 		}
 

@@ -18,6 +18,8 @@
 // 3. This notice may not be removed or altered from any source distribution.
 // EndLic
 
+#undef KTHDRAWDEBUG
+
 #include "../Headers/Kthura_Draw.hpp"
 
 
@@ -25,10 +27,16 @@ namespace Slyvina {
 	namespace Kthura {
 		void _KthuraDraw::DrawObject(KthuraObject* o, int insx, int insy) {
 			if (!AllowDraw.count(o->Kind())) AllowDraw[o->Kind()]=false;
+#ifdef KTHDRAWDEBUG
+			printf("Object #%d (%s); AllowKind: %d; Visible: %d\n", o->ID(), o->SKind().c_str(), AllowDraw[o->Kind()], o->visible());
+#endif
 			if (o->visible() && AllowDraw[o->Kind()]) {
 				if (!DrawFuncs.count(o->Kind())) {
 					throw std::runtime_error("No function set to draw Kthura objects of kind: " + o->SKind());
 				}
+#ifdef KTHDRAWDEBUG
+				printf("Draw this object!\n");
+#endif
 				DrawFuncs[o->Kind()](o, insx, insy);
 			}
 		}
@@ -55,7 +63,13 @@ namespace Slyvina {
 			};
 		}
 		void _KthuraDraw::DrawLayer(KthuraLayer* L, int insx, int insy) {
-			for (auto o = L->DomFirst; o; o->DomNext) DrawObject(o,insx,insy);
+#ifdef KTHDRAWDEBUG
+			printf("Draw Layer\n");
+#endif
+			for (auto o = L->DomFirst; o; o= o->DomNext) {
+				//std::cout << (int)L->DomFirst << "\t" << (int)o << "\t" << o->DomNext << " \n"; // debug
+				DrawObject(o, insx, insy);
+			}
 		}
 	}
 }

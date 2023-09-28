@@ -43,7 +43,7 @@ namespace Slyvina {
 			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD);
 			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF);
 
-			void DrawLayer(KthuraLayer* L,int insx,int insy)
+			void DrawLayer(KthuraLayer* L, int insx, int insy);
 		};
 
 		inline KthuraDraw MakeDrawDriver(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD) { return std::unique_ptr<_KthuraDraw>(new _KthuraDraw(DF, AD)); }

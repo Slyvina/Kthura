@@ -19,9 +19,21 @@
 // EndLic
 
 
+#undef KD_TQSG_DEBUG
+
 #include <TQSG.hpp>
 #include <TQSE.hpp>
 #include <SlyvTime.hpp>
+
+#ifdef KD_TQSG_DEBUG
+#include <SlyvQCol.hpp>
+#include <iostream>
+#define Chat(m) QCol->Doing("Kthura.TQSG",m)
+#define DCOUT(m) std::cout << "\x1b[33mKthura.TQSG>\x1b[0m "<<m<<"\n"
+#else
+#define Chat(m)
+#define DCOUT(m)
+#endif
 
 #include "../Headers/Kthura_Draw_TQSG.hpp"
 
@@ -40,7 +52,7 @@ namespace Slyvina {
 #pragma endregion
 
 #pragma region Textures
-		struct KillTex { KthuraKind K{ KthuraKind::Unknown }; std::string T{} };
+		struct KillTex { KthuraKind K{ KthuraKind::Unknown }; std::string T{}; };
 
 		const int cleanuptime = 3600;
 		const int cleanupreset = 1200;
@@ -54,7 +66,7 @@ namespace Slyvina {
 		public:
 			time_t LastCalled;
 
-
+			MyTexture() { LastCalled = 0; }
 			MyTexture(KthuraKind K,std::string Entry) {
 				auto gt{ TimeStamp() };
 				LastCalled = gt;
@@ -64,6 +76,7 @@ namespace Slyvina {
 					// TODO: Take note of .hot files
 					_Tex->HotBottomCenter();
 				}
+				Chat("Texture loaded: " + Entry + "; (" + KindName(K) + ")");
 			}
 
 			inline TImage Tex() { 
@@ -76,6 +89,8 @@ namespace Slyvina {
 			}
 			static inline TImage Tex(KthuraKind K, std::string T) {
 				Trans2Upper(T);
+				Chat("Want Tex: " + T + "\t(" + KindName(K) + ")");
+				DCOUT("KIND: " << KindName(K) << " " << Reg.count(K) << ";\t " << T << " " << Reg[K].count(T));
 				if (!Reg[K].count(T)) Reg[K][T] = { K,T };
 				return Reg[K][T].Tex();
 			}
@@ -114,10 +129,15 @@ namespace Slyvina {
 			auto scx{ (double)o->scalex() / 1000 };
 			auto scy{ (double)o->scaley() / 1000 };
 			auto Tex{ MyTexture::Tex(o->Kind(),o->texture()) };
+			Chat("Obstacle!");
 			Col(o);
 			SetScale(scx, scy);
 			Rotate(o->rotatedeg());
+#ifdef KD_TQSG_DEBUG
+			printf("Draw (%4d,%4d) (%d)   %dx%d(%f,%f);  #%02X%02X%02X(%d)\n", o->x() - ScrollX, o->y() - ScrollY, o->animframe(),o->scalex(),o->scaley(),scx,scy,o->red(),o->green(),o->blue(),o->alpha());
+#endif
 			Tex->XDraw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
+			//if (!(KeyDown(SDLK_SPACE))) { Flip(); do { Poll(); } while (!KeyDown(SDLK_SPACE)); } // DEBUG!
 			SetScale(1);
 			Rotate(0);
 		}
