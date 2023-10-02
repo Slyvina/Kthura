@@ -445,11 +445,11 @@ namespace Slyvina {
 		}
 
 		void KthuraLayer::BlockMap(int x, int y, bool v) {
-			if (x >= 0 && y >= 0 && x < _BlockW && y < _BlockH) _BlockMap[(y * _BlockW) + x] = v; else Paniek("BlockMap out of Range", TrSPrintF("Set: (%d,%d) %dx%d", x, y, _BlockW, _BlockH));
+			if (x >= 0 && y >= 0 && x <= _BlockW && y <= _BlockH) _BlockMap[(y * _BlockW) + x] = v; else Paniek("BlockMap out of Range", TrSPrintF("Set: (%d,%d) %dx%d", x, y, _BlockW, _BlockH));
 		}
 
 		bool KthuraLayer::BlockMap(int x, int y) {
-			if (x >= 0 && y >= 0 && x < _BlockW && y < _BlockH)
+			if (x >= 0 && y >= 0 && x <= _BlockW && y <= _BlockH)
 				return _BlockMap[(y * _BlockW) + x];
 			Paniek("BlockMap out of Range", TrSPrintF("Get: (%d,%d) %dx%d", x, y, _BlockW, _BlockH));
 			return false;
