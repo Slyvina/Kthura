@@ -979,6 +979,11 @@ namespace Slyvina {
 			}
 		}
 
+		KthuraLayer* _Kthura::operator[](std::string laytag) {
+			return Layer(laytag);
+		}
+
+
 		Kthura LoadKthura(std::string resfile, std::string prefix) {
 			auto J{ JCR6_Dir(resfile) };
 			if (Last()->Error) {

@@ -81,6 +81,8 @@ namespace Slyvina {
 
 			_Kthura(Slyvina::JCR6::JT_Dir Resource, std::string prefix = "");
 			inline _Kthura() { NewLayer("__BASE"); }
+
+			KthuraLayer* operator[](std::string laytag);
 		};
 
 		std::string KindName(KthuraKind k);
@@ -220,6 +222,8 @@ namespace Slyvina {
 			inline void AutoRemap(bool onoff) { _autoRemap = onoff; PerformAutoRemap(); }
 			inline bool AutoRemap() { return _autoRemap; }	
 			inline KthuraObject* Spawn(std::string spot) { return KthuraObject::Spawn(this, spot); }
+			inline KthuraObject* operator[](std::string otag) { return Obj(otag); }
+			inline KthuraObject* operator[](int i) { return Obj(i); }
 		};
 
 
