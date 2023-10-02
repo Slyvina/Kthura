@@ -30,6 +30,16 @@
 #define KthuraObjValRP(type,prop) void KthuraObject::prop(type v) {_Obj->prop=v; _parent->PerformAutoRemap();} type KthuraObject::prop() {return _Obj->prop;}
 #define KthuraObjValDefFunc(type,prop)  type KthuraObject::prop() { return _Obj->prop;} void KthuraObject::prop(type value) 
 
+#define KthuraActVal(type,prop,propstring,eval) \
+	void KthuraObject::prop(type v) {\
+		if (_Kind!=KthuraKind::Actor) { Paniek(TrSPrintF("Set:'%s' is a propert strictly reserved for actors. Cannot be used for %s",propstring,SKind().c_str())); return; }\
+		_Act->prop=v;\
+	}\
+	type KthuraObject::prop() { \
+		if (_Kind!=KthuraKind::Actor) { Paniek(TrSPrintF("Get:'%s' is a propert strictly reserved for actors. Cannot be used for %s",propstring,SKind().c_str())); return eval; }\
+		return _Act->prop;\
+	}
+
 #ifdef KthuraCoreDebug
 #define Chat(msg) cout << "\x1b[33mKthura Debug>\t\x1b[0m" << msg << endl
 #else
@@ -165,8 +175,8 @@ namespace Slyvina {
 			TagMap.clear();
 			for (auto o = _firstObject; o; o = o->Next()) {
 				if (o->Tag().size()) {
-					if (TagMap.count(o->Tag())) Paniek("RemapTags(): Dupe tag (" + o->Tag() + ")");
-					TagMap[o->Tag()] = o;
+					if (TagMap.count(Upper(o->Tag()))) Paniek("RemapTags(): Dupe tag (" + o->Tag() + ")");
+					TagMap[Upper(o->Tag())] = o;
 				}
 			}
 		}
@@ -208,6 +218,202 @@ namespace Slyvina {
 			}
 		}
 
+		bool KthuraLayer::Block(int x, int y) {
+			return
+				x < 0 ||
+				y < 0 ||
+				x >= _BlockW ||
+				y >= _BlockH ||
+				BlockMap(x, y);
+		}
+
+		void KthuraLayer::BuildBlockmap() {
+
+			// No need to reinvent the wheel. 
+			// This has been copied from my original C# class and been adapted to the current Slyvina version.
+
+			// KthuraObject O;
+			auto GW = gridx;
+			auto GH = gridy;
+			int X, Y, W, H; //BX, BY,
+			int TX, TY, AX, AY, TW, TH;
+			int BoundX = 0, BoundY = 0;
+			int iw, tiw, ih, tih;
+			// Let's first get the bounderies
+			for (KthuraObject* O = FirstObject(); O; O = O->Next()) { // foreach(KthuraObject O in Objects) {
+				X = std::max(0, O->x()); //if (X < 0) X = 0;
+				Y = std::max(0, O->y()); // O.y; if (Y < 0) Y = 0;
+				W = std::max(0, O->w() - 1); //if (W < 0) W = 0;
+				H = std::max(0, O->h() - 1); //if (H < 0) H = 0;
+				switch (O->Kind()) {
+				case KthuraKind::TiledArea:
+				case KthuraKind::Zone:
+				case KthuraKind::StretchedArea:
+				case KthuraKind::Rect:
+					TX = (int)ceil((double)((X + W) / GW));
+					TY = (int)ceil((double)((Y + H) / GH));
+					if (TX > BoundX) BoundX = TX;
+					if (TY > BoundY) BoundY = TY;
+					break;
+					/* Obstacle and Pics no longer supported for Blockmaps!
+					case KthuraKind::Obstacle:
+						TX = (int)Math.Floor((decimal)(X / GW));
+						TY = (int)Math.Floor((decimal)(Y / GH));
+						if (TX > BoundX) BoundX = TX;
+						if (TY > BoundY) BoundY = TY;
+						break;
+					case KthuraKind::Pic:
+						TX = (int)Math.Floor((decimal)X / GW);
+						TY = (int)Math.Floor((decimal)Y / GW);
+						if (TX > BoundX) BoundX = TX;
+						if (TY > BoundY) BoundY = TY;
+						break;
+					}
+					*/
+				}
+			}
+			_BlockW = BoundX; //BlockMapBoundW = BoundX;
+			_BlockH = BoundY; //BlockMapBoundH = BoundY;
+			delete[] _BlockMap;
+			_BlockMap = new bool[(BoundY + 1) * (BoundX + 1)]; //BlockMap = new bool[BoundX + 1, BoundY + 1];
+			for (int i = 0; i < (BoundY + 1) * (BoundX + 1); ++i) _BlockMap[i] = false; // Must be sure all is false before starting
+
+			// And now for the REAL work.		
+			for (KthuraObject* O = FirstObject(); O; O = O->Next()) { //foreach(KthuraObject O in Objects) {
+				if (O->impassible()) {
+					//Debug.WriteLine($"Checking object {O.kind}; {O.Texture}; {O.Labels}");
+					X = std::max(0, O->x()); //if (X < 0) X = 0;
+					Y = std::max(0, O->y()); // O.y; if (Y < 0) Y = 0;
+					W = std::max(0, O->w() - 1); //if (W < 0) W = 0;
+					H = std::max(0, O->h() - 1); //if (H < 0) H = 0;
+					switch (O->Kind()) {
+					case KthuraKind::TiledArea:
+					case KthuraKind::Zone:
+					case KthuraKind::StretchedArea:
+					case KthuraKind::Rect:
+						//Kthura.EDITTORLOG($"Working on Impassible {O.kind} {O.Tag}");
+						TX = (int)floor((double)X / GW);
+						TY = (int)floor((double)Y / GH);
+						TW = (int)ceil((double)((X + W) / GW));
+						TH = (int)ceil((double)((Y + H) / GH));
+						//Print "DEBUG: Blockmapping area ("+TX+","+TY+") to ("+TW+","+TH+")"
+						for (AX = TX; AX <= TW; AX++) {
+							for (AY = TY; AY <= TH; AY++) {
+								//for (AX = TX; AX < TW; AX++) {
+								//    for (AY = TY; AY < TH; AY++) {
+								//try {
+									//Kthura.EDITTORLOG($"Blocking {AX},{AY}");
+									//BlockMap[AX, AY] = true;
+								BlockMap(AX, AY, true);
+								//} catch {
+									//throw new Exception($"BlockMap[{AX},{AY}]: Out of bounds ({BlockMap.GetLength(0)}x{BlockMap.GetLength(1)})");
+								//}
+							}
+						}
+						break;
+						/*
+					case "Obstacle":
+						TX = (int)Math.Floor((decimal)(X / GW));
+						TY = (int)Math.Floor((decimal)((Y - 1) / GH));
+						BlockMap[TX, TY] = true;
+						if (KthuraDraw.DrawDriver == null) throw new Exception("Draw Driver is null!");
+						if (KthuraDraw.DrawDriver.HasTexture(O))
+							iw = KthuraDraw.DrawDriver.ObjectWidth(O);
+						else
+							iw = 0;
+						tiw = (int)Math.Ceiling((decimal)iw / GW) - 1;
+
+						for (AX = TX - (tiw); AX <= TX + (tiw); AX++) {
+							if (AX >= 0 && AX <= BoundX && TY <= BoundY && TY >= 0) BlockMap[AX, TY] = true;
+						}
+						break;
+					case "Pic":
+						TX = (int)Math.Floor((decimal)X / GW);
+						TY = (int)Math.Floor((decimal)Y / GH);
+						BlockMap[TX, TY] = true;
+						if (KthuraDraw.DrawDriver.HasTexture(O)) {
+							iw = KthuraDraw.DrawDriver.ObjectWidth(O); //ImageWidth(o.textureimage)
+							tiw = (int)Math.Ceiling((decimal)iw / GW);
+							ih = KthuraDraw.DrawDriver.ObjectHeight(O); //ImageHeight(o.textureimage)
+							tih = (int)Math.Ceiling((decimal)ih / GH);
+							for (AX = TX; AX < TX + (tiw); AX++) for (AY = TY; AY < TY + tih; AY++) {
+								if (AX >= 0 && AX <= BoundX && AY <= BoundY && AY >= 0) BlockMap[AX, AY] = true;
+							}
+						}
+						break;
+						*/
+					}
+				}
+			}
+			// And this will force a way open if applicable	
+			for (KthuraObject* O = FirstObject(); O; O = O->Next()) { //foreach(KthuraObject O in Objects) {
+				if (O->forcepassible()) {
+					//Debug.WriteLine($"Checking object {O.kind}; {O.Texture}; {O.Labels}");
+					X = std::max(0, O->x()); //if (X < 0) X = 0;
+					Y = std::max(0, O->y()); // O.y; if (Y < 0) Y = 0;
+					W = std::max(0, O->w() - 1); //if (W < 0) W = 0;
+					H = std::max(0, O->h() - 1); //if (H < 0) H = 0;
+					switch (O->Kind()) {
+					case KthuraKind::TiledArea:
+					case KthuraKind::Zone:
+					case KthuraKind::StretchedArea:
+					case KthuraKind::Rect:
+						//Kthura.EDITTORLOG($"Working on Impassible {O.kind} {O.Tag}");
+						TX = (int)floor((double)X / GW);
+						TY = (int)floor((double)Y / GH);
+						TW = (int)ceil((double)((X + W) / GW));
+						TH = (int)ceil((double)((Y + H) / GH));
+						//Print "DEBUG: Blockmapping area ("+TX+","+TY+") to ("+TW+","+TH+")"
+						for (AX = TX; AX <= TW; AX++) {
+							for (AY = TY; AY <= TH; AY++) {
+								//for (AX = TX; AX < TW; AX++) {
+								//    for (AY = TY; AY < TH; AY++) {
+								//try {
+									//Kthura.EDITTORLOG($"Blocking {AX},{AY}");
+									//BlockMap[AX, AY] = true;
+								BlockMap(AX, AY, false);
+								//} catch {
+									//throw new Exception($"BlockMap[{AX},{AY}]: Out of bounds ({BlockMap.GetLength(0)}x{BlockMap.GetLength(1)})");
+								//}
+							}
+						}
+						break;
+						/*
+					case "Obstacle":
+						TX = (int)Math.Floor((decimal)(X / GW));
+						TY = (int)Math.Floor((decimal)((Y - 1) / GH));
+						BlockMap[TX, TY] = true;
+						if (KthuraDraw.DrawDriver == null) throw new Exception("Draw Driver is null!");
+						if (KthuraDraw.DrawDriver.HasTexture(O))
+							iw = KthuraDraw.DrawDriver.ObjectWidth(O);
+						else
+							iw = 0;
+						tiw = (int)Math.Ceiling((decimal)iw / GW) - 1;
+
+						for (AX = TX - (tiw); AX <= TX + (tiw); AX++) {
+							if (AX >= 0 && AX <= BoundX && TY <= BoundY && TY >= 0) BlockMap[AX, TY] = true;
+						}
+						break;
+					case "Pic":
+						TX = (int)Math.Floor((decimal)X / GW);
+						TY = (int)Math.Floor((decimal)Y / GH);
+						BlockMap[TX, TY] = true;
+						if (KthuraDraw.DrawDriver.HasTexture(O)) {
+							iw = KthuraDraw.DrawDriver.ObjectWidth(O); //ImageWidth(o.textureimage)
+							tiw = (int)Math.Ceiling((decimal)iw / GW);
+							ih = KthuraDraw.DrawDriver.ObjectHeight(O); //ImageHeight(o.textureimage)
+							tih = (int)Math.Ceiling((decimal)ih / GH);
+							for (AX = TX; AX < TX + (tiw); AX++) for (AY = TY; AY < TY + tih; AY++) {
+								if (AX >= 0 && AX <= BoundX && AY <= BoundY && AY >= 0) BlockMap[AX, AY] = true;
+							}
+						}
+						break;
+						*/
+					}
+				}
+			}
+		}
+
 		KthuraObject* KthuraLayer::NewTiledArea(int32 x, int32 y, int32 w, int32 h, std::string Texture, std::string Tag) {
 			auto o = NewObject(KthuraKind::TiledArea);
 			o->x(x);
@@ -232,11 +438,21 @@ namespace Slyvina {
 		void KthuraLayer::TotalRemap() {
 			RemapTags();
 			RemapDominance();
-//#pragma message ("Still gotta do remapping by dominance")
 			RemapID();
 #pragma message ("Still gotta do remapping by labels")
-
+			BuildBlockmap();
 			_modified = false;
+		}
+
+		void KthuraLayer::BlockMap(int x, int y, bool v) {
+			if (x >= 0 && y >= 0 && x < _BlockW && y < _BlockH) _BlockMap[(y * _BlockW) + x] = v; else Paniek("BlockMap out of Range", TrSPrintF("Set: (%d,%d) %dx%d", x, y, _BlockW, _BlockH));
+		}
+
+		bool KthuraLayer::BlockMap(int x, int y) {
+			if (x >= 0 && y >= 0 && x < _BlockW && y < _BlockH)
+				return _BlockMap[(y * _BlockW) + x];
+			Paniek("BlockMap out of Range", TrSPrintF("Get: (%d,%d) %dx%d", x, y, _BlockW, _BlockH));
+			return false;
 		}
 
 		KthuraObject* KthuraLayer::NewObject(KthuraKind k) {
@@ -251,6 +467,11 @@ namespace Slyvina {
 		KthuraObject* KthuraLayer::Obj(uint64 i) {
 			if (HasID(i)) return IDMap[i];
 			Paniek("Object doesn't exist", "Object ID:#" + to_string(i));
+		}
+		KthuraObject* KthuraLayer::Obj(std::string _tag) {
+			if (HasTag(_tag)) return TagMap[Upper(_tag)];
+			Paniek("Object doesn't exist", "Object Tag " + _tag);
+			return nullptr;
 		}
 #pragma endregion
 
@@ -296,6 +517,24 @@ namespace Slyvina {
 
 		struct __KthuraActorData {
 			KthuraObject* parent{ nullptr };
+			std::string ChosenPic{""};
+			bool NotInMotionThen0{ true };
+			bool InMotion{ false };
+			bool Walking{ false };
+			bool Moving{ false };
+			bool WalkingIsInMotion{ true };
+			bool MoveIgnoreBlock{ false };
+			bool AutoWind{ true };
+			int UnMoveTimer{ 4 };
+			int MoveX{ 0 }, MoveY{ 0 };
+			int MoveSkip{ 4 };
+			int FrameSpeed{ 4 };
+			int FrameSpeedCount{ 0 };
+			int WalkSpot{ 0 };
+			std::string Wind { "North" };
+			int WalkingToX{ 0 }, WalkingToY{ 0 };
+			int PathIndex{ 0 };
+			std::vector<KthuraSpot> FoundPath{};
 		};
 
 		KthuraObject::KthuraObject(KthuraObject* _after, KthuraLayer* _ouwe, KthuraKind k, uint64 _giveID) {
@@ -312,22 +551,23 @@ namespace Slyvina {
 			_Kind = k;
 		}
 
-		void KthuraObject::__KillMe() {
+		void KthuraObject::__KillMe(bool DisposeMe) {
 			if (_prev) _prev->_next = _next;
 			if (_next) _next->_prev = _prev;
-			//delete this;
+			if (DisposeMe) delete this;
 		}
 
 
 		// Properties
 		void KthuraObject::Tag(std::string t) {
-			Trans2Upper(t);
+			//Trans2Upper(t);
 			if (_Obj->Tag == t) return; // No changes = no actions needed
 			_Obj->Tag = t;
 			_parent->PerformAutoRemap();
 		}
 		std::string KthuraObject::Tag() { return _Obj->Tag; }
 
+		// All Objects
 		KthuraObjVal(int32, x);
 		KthuraObjVal(int32, y);
 		KthuraObjVal(int32, w);
@@ -354,6 +594,175 @@ namespace Slyvina {
 		void KthuraObject::data(std::string k, std::string v) { _Obj->data[Upper(k)] = v; }
 		std::string KthuraObject::data(std::string k) { return _Obj->data[Upper(k)]; }
 		std::map<std::string, std::string>* KthuraObject::data() { return &(_Obj->data); }
+
+		// Actors Only
+		KthuraActVal(bool, NotInMotionThen0, "NotInMotionThen0", false);
+		KthuraActVal(std::string, ChosenPic, "ChosenPic", "");
+		void KthuraObject::InMotion(bool value) {
+			if (_Kind != KthuraKind::Actor) { Paniek("You cannot set InMotion into an non-actor!"); return; }
+			_Act->InMotion = value;
+		}
+		bool KthuraObject::InMotion() {
+			if (_Kind != KthuraKind::Actor) { Paniek("You cannot get InMotion from an non-actor!"); return false; }
+			if (_Act->WalkingIsInMotion)
+				return _Act->Walking || _Act->Moving;
+			else
+				return _Act->InMotion;
+		}
+		KthuraActVal(bool, Walking, "Walking", false);
+		KthuraActVal(bool, Moving, "Moving", false);
+		KthuraActVal(bool, WalkingIsInMotion, "WalkingIsInMotion", true);
+		KthuraActVal(bool, MoveIgnoreBlock, "MoveIgnoreBlock", false);
+		KthuraActVal(bool, AutoWind, "AutoWind", true);
+		KthuraActVal(int, UnMoveTimer, "UnMoveTime", 0);
+		KthuraActVal(int, MoveX, "MoveX", 0);
+		KthuraActVal(int, MoveY, "MoveY", 0);
+		KthuraActVal(int, MoveSkip, "MoveSkip", 0);
+		KthuraActVal(int, FrameSpeed, "FrameSpeed", 0);
+		KthuraActVal(int, FrameSpeedCount, "FrameSpeedCount", 0);
+		KthuraActVal(int, WalkSpot, "WalkSpot", 0);
+		KthuraActVal(std::string, Wind, "Wind", "North");
+		KthuraActVal(int, WalkingToX, "WalkingToX", 0);
+		KthuraActVal(int, WalkingToY, "WalkingToY", 0);
+		void KthuraObject::MoveTo(int x, int y) {
+			MoveX(x);
+			MoveY(y);
+			Moving(true);
+		}
+
+		void KthuraObject::MoveTo(KthuraObject* o) { MoveTo(o->x(), o->y()); }
+
+		void KthuraObject::MoveTo(std::string T) {
+			if (!Parent()->HasTag(T)) { Paniek(TrSPrintF("Object tagged `%s` not found", T.c_str())); return; }
+			MoveTo(Parent()->Obj(T));
+		}
+
+		KthuraObject* KthuraObject::Spawn(KthuraLayer* parent, std::string spot) {
+			auto ret{ parent->NewObject(KthuraKind::Actor) }; //var ret = new KthuraActor(parent);			
+			if (!parent->HasTag(spot)) {
+				std::cout << "\nWARNING! I cannot spawn an actor on not existent spot " << spot << "\n";
+				return nullptr;
+			}
+			auto obj = parent->Obj(spot);
+			ret->x(obj->x());
+			ret->y(obj->y());
+			ret->dominance(obj->dominance());
+			ret->alpha(255);
+			ret->r(255);
+			ret->g(255);
+			ret->b(255);
+			ret->visible(true);
+			ret->impassible(false);
+			ret->forcepassible(false);
+			if (obj->data()->count("WIND")) ret->Wind(obj->data("Wind")); else ret->Wind("North");
+			return ret;
+		}
+
+		KthuraObject* KthuraObject::Spawn(KthuraLayer* parent, int x, int y, std::string wind, byte R, byte G, byte B, byte alpha, int Dominance) {
+			auto ret{ parent->NewObject(KthuraKind::Actor) };
+			ret->x(x);
+			ret->y(y);
+			ret->Wind(wind);
+			ret->r(R);
+			ret->g(G);
+			ret->b(B);
+			ret->alpha(alpha);
+			ret->dominance(Dominance);
+			ret->visible(true);
+			ret->impassible(false);
+			ret->forcepassible(false);
+			return ret;
+		}
+
+		int KthuraObject::PathLength() {
+			return (int)_Act->FoundPath.size();
+		}
+
+		int KthuraObject::CWalkX() {
+			if (!_Act) return 0;
+			if (_Act->Walking) return _Act->FoundPath[_Act->PathIndex].x;
+			return 0;			
+		}
+
+		int KthuraObject::CWalkY() {
+			if (!_Act) return 0;
+			if (_Act->Walking) return _Act->FoundPath[_Act->PathIndex].y;
+			return 0;
+		}
+
+		void KthuraObject::Walk2Move() {
+			if (!_Act) return;
+			_Act->MoveX = (CWalkX() * _parent->gridx) + (_parent->gridx / 2);
+			_Act->MoveY = ((CWalkY() * _parent->gridy) + (_parent->gridy)) - 1;
+			_Act->Moving = true;
+		}
+
+		void KthuraObject::WalkTo(int to_x, int to_y, bool real) {
+			if (!_Act) return;
+			auto gridx = _parent->gridx;
+			auto gridy = _parent->gridy;
+			int tox = to_x, toy = to_y;
+			int fromx = x(), fromy = y();
+			if (real) {
+				tox = to_x / gridx;
+				toy = to_y / gridy;
+				fromx = x() / gridx;
+				fromy = y() / gridy;
+			}
+			//FoundPath = Dijkstra.QuickPath(Parent.PureBlockRev, Parent.BlockMapWidth, Parent.BlockMapHeight, fromx, fromy, tox, toy);
+			_Act->FoundPath = _Kthura::Walk.Route(&_Kthura::Walk, _parent, fromx, fromy, tox, toy);
+			if (_Kthura::Walk.Succes(&_Kthura::Walk)) {
+				_Act->PathIndex = 0;
+				_Act->Walking = true;
+				_Act->WalkingToX = to_x; //FoundPath.Nodes[0].x;
+				_Act->WalkingToY = to_y; //FoundPath.Nodes[1].y;
+				_Act->MoveX = x();
+				_Act->MoveY = y();
+				Walk2Move();
+			} else {
+				_Act->Walking = false;
+				//FoundPath = null;
+				_Act->FoundPath.clear();
+			}
+		}
+
+		void KthuraObject::WalkTo(KthuraObject* o) { WalkTo(o->x(), o->y(), true); }
+
+		void KthuraObject::WalkTo(std::string oTag) { WalkTo(_parent->Obj(oTag)); }
+
+		void KthuraObject::UpdateMoves() {
+			if (_Act->Moving || _Act->Walking) {
+				if (_Act->MoveX < _Obj->x) { _Obj->x -= _Act->MoveSkip; if (_Obj->x < _Act->MoveX) _Obj->x = _Act->MoveX; if (_Act->AutoWind) _Act->Wind = "West"; }
+				if (_Act->MoveX > _Obj->x) { _Obj->x += _Act->MoveSkip; if (_Obj->x > _Act->MoveX) _Obj->x = _Act->MoveX; if (_Act->AutoWind) _Act->Wind = "East"; }
+				if (_Act->MoveY < _Obj->y) { _Obj->y -= _Act->MoveSkip; if (_Obj->y < _Act->MoveY) _Obj->y = _Act->MoveY; if (_Act->AutoWind) _Act->Wind = "North"; }
+				if (_Act->MoveY > _Obj->y) { _Obj->y += _Act->MoveSkip; if (_Obj->y > _Act->MoveY) _Obj->y = _Act->MoveY; if (_Act->AutoWind) _Act->Wind = "South"; }
+				if (_Act->MoveX == _Obj->x && _Act->MoveY == _Obj->y) {
+					if (!_Act->Walking)
+						_Act->Moving = false;
+					else {
+						//* Pathfinder driver required an not yet present!
+						_Act->PathIndex++;
+						if (_Act->PathIndex >= PathLength()) {
+							_Act->Walking = false;
+							_Act->Moving = false;
+						} else {
+							Walk2Move();
+						}
+						//*/
+					}
+				}
+			} else {
+				_Act->MoveX = _Obj->x;
+				_Act->MoveY = _Obj->y;
+			}
+			if ((_Act->WalkingIsInMotion && _Act->Walking) || InMotion()) {
+				_Act->FrameSpeedCount++;
+				if (_Act->FrameSpeedCount >= _Act->FrameSpeed) {
+					_Act->FrameSpeedCount = 0;
+					_Obj->animframe++;
+				}
+			} else if (_Act->WalkingIsInMotion && (!_Act->Walking)) _Obj->animframe = 0;
+		}
 
 
 		static map<KthuraKind, string> _KindName{
@@ -392,6 +801,8 @@ namespace Slyvina {
 		}
 #pragma endregion
 
+
+		KthuraWalk _Kthura::Walk{};
 #pragma region Loader
 #define I_Want_An_Object if (!co) { Paniek("I cannot define field '"+fld+"' without an object",TrSPrintF("Line:%d;Instruction:%s",line,instruction.c_str())); return; }
 #define SyntaxError { Paniek("Syntax error", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); return; }

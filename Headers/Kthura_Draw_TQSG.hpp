@@ -27,6 +27,9 @@
 namespace Slyvina {
 	namespace Kthura {
 
+		typedef void (*TQSGKTHURAPANIEK)(std::string);
+		extern TQSGKTHURAPANIEK TQSG_Kthura_Panic;
+
 		/// <summary>
 		/// This function has only been implemented for editors which could require zones and exit points to be visible and have their tags shown on screen. That requires a font to be loaded. Other than that you can best leave this be.
 		/// </summary>

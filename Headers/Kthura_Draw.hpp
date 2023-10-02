@@ -25,10 +25,13 @@ namespace Slyvina {
 
 		class _KthuraDraw;
 
+		struct KthuraRect { int x, y, w, h; };
+
 		typedef std::unique_ptr<_KthuraDraw> KthuraDraw;
 		typedef std::shared_ptr<_KthuraDraw> KthuraDrawShared;
 
 		typedef void (*FKthuraDrawObject)(KthuraObject*,int,int);
+		typedef KthuraRect (*FKthuraSize)(KthuraObject*);
 
 		typedef std::map<KthuraKind, FKthuraDrawObject> DrawFuncMap;
 		typedef std::map<KthuraKind, bool> DrawAllowMap;
@@ -37,11 +40,16 @@ namespace Slyvina {
 		class _KthuraDraw{
 		private:
 		public:
+			bool CheckPivotExitSelf{false};
 			std::map<KthuraKind, FKthuraDrawObject> DrawFuncs{};
 			std::map<KthuraKind, bool> AllowDraw{};
 			void DrawObject(KthuraObject* o, int insx, int insy);			
-			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD);
-			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF);
+			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize FKS = nullptr);
+			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF,FKthuraSize FKS=nullptr);
+			FKthuraSize _ObstacleSize{ nullptr };
+
+			KthuraRect ObjectSize(KthuraObject* o);
+			bool InsideObject(KthuraObject* o, int x, int y);
 
 			void DrawLayer(KthuraLayer* L, int insx, int insy);
 		};

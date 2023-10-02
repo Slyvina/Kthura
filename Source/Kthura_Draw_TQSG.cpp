@@ -44,7 +44,23 @@ namespace Slyvina {
 	using namespace JCR6;
 	using namespace Units;
 
+
 	namespace Kthura {
+
+#pragma region "Error Management"
+		static void DefaultCrash(std::string m) {
+			Notify("KTHURA TQSG DRIVER ERROR!\n\n\n" + m);
+			exit(10);
+		}
+
+		TQSGKTHURAPANIEK TQSG_Kthura_Panic{ nullptr };
+
+		static void DrvCrash(std::string m) {
+			if (!TQSG_Kthura_Panic) TQSG_Kthura_Panic = DefaultCrash;
+			TQSG_Kthura_Panic(m);
+		}
+
+#pragma endregion
 
 #pragma region "External data"
 		static TImageFont EdtFont{nullptr};
@@ -69,9 +85,17 @@ namespace Slyvina {
 			MyTexture() { LastCalled = 0; }
 			MyTexture(KthuraKind K,std::string Entry) {
 				auto gt{ TimeStamp() };
+				if (Trim(Entry) == "") {
+					DrvCrash("There's a texture request for an object (" + KindName(K) + "), but no texture file was there");
+					return;
+				}
 				LastCalled = gt;
 				Reg[K][Upper(Entry)] = *this;
 				_Tex = LoadImage(TexDir, Entry);
+				if (!_Tex->Frames()) {
+					DrvCrash(TrSPrintF("Request to load texture '%s' for type '%s' has failed!\nNo frames", Entry.c_str(), KindName(K).c_str()));
+					return;
+				}
 				if (K == KthuraKind::Obstacle) {
 					// TODO: Take note of .hot files
 					_Tex->HotBottomCenter();
@@ -88,6 +112,7 @@ namespace Slyvina {
 				return _Tex; 
 			}
 			static inline TImage Tex(KthuraKind K, std::string T) {
+				if (K == KthuraKind::Exit || K == KthuraKind::Pivot) return nullptr;
 				Trans2Upper(T);
 				Chat("Want Tex: " + T + "\t(" + KindName(K) + ")");
 				DCOUT("KIND: " << KindName(K) << " " << Reg.count(K) << ";\t " << T << " " << Reg[K].count(T));
@@ -136,6 +161,10 @@ namespace Slyvina {
 #ifdef KD_TQSG_DEBUG
 			printf("Draw (%4d,%4d) (%d)   %dx%d(%f,%f);  #%02X%02X%02X(%d)\n", o->x() - ScrollX, o->y() - ScrollY, o->animframe(),o->scalex(),o->scaley(),scx,scy,o->red(),o->green(),o->blue(),o->alpha());
 #endif
+			if (!Tex) {
+				DrvCrash(TrSPrintF("Obstacle (%d) appears to have no valid texture! (%s)",o->ID(),o->texture()));
+				return;
+			}
 			Tex->XDraw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
 			//if (!(KeyDown(SDLK_SPACE))) { Flip(); do { Poll(); } while (!KeyDown(SDLK_SPACE)); } // DEBUG!
 			SetScale(1);
@@ -150,7 +179,7 @@ namespace Slyvina {
 
 		static void _Zone(KthuraObject* o, int ScrollX, int ScrollY){
 			SetColor(o->red(), o->green(), o->blue(), 255);
-			EdtFont->Text(o->Tag(), 2 + (o->x() - ScrollX), 2 + (o->y() - ScrollY));
+			EdtFont->Dark(o->Tag(), 2 + (o->x() - ScrollX), 2 + (o->y() - ScrollY));
 			SetColor(o->red(), o->green(), o->blue(), 120);
 			ARect(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h());
 		}
@@ -158,19 +187,28 @@ namespace Slyvina {
 		static void _Tiled(KthuraObject* o, int ScrollX, int ScrollY) {
 			auto Tex{ MyTexture::Tex(KthuraKind::TiledArea,o->texture()) };
 			Col(o);
+			if (!Tex) {
+				DrvCrash(TrSPrintF("Tiled Area (%d) appears to have no valid texture! (%s)", o->ID(), o->texture()));
+				return;
+			}
 			Tex->Tile(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe(), -o->insertx(), -o->inserty());
 		}
 
 		static void _Stretch(KthuraObject* o, int ScrollX, int ScrollY) {
 			auto Tex{ MyTexture::Tex(KthuraKind::TiledArea,o->texture()) };
 			Col(o);
+			if (!Tex) {
+				DrvCrash(TrSPrintF("Stretched Area (%d)  appears to have no valid texture! (%s)", o->ID(), o->texture()));
+				return;
+			}
 			Tex->StretchDraw(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe());
 		}
 
 		static void Mark(int x, int y) {		
-			ARect(x - 5, y - 5, 11, 11);
+			ARect(x - 5, y - 5, 11, 11, true);
 			ALine(x - 5, y, x + 5, y);
 			ALine(x, y - 5, x, y + 5);
+			//printf("Draw Mark (%d,%d)\n", x, y); // debug 
 		}
 
 		static void _Pivot(KthuraObject* o, int ScrollX, int ScrollY) {
@@ -183,10 +221,11 @@ namespace Slyvina {
 				dx{ o->x() - ScrollX },
 				dy{ o->y() - ScrollY };
 			bool showt{ ScreenWidth(false) == ScreenWidth(true) && ScreenHeight(false) == ScreenHeight(true) };
-			SetColor(100, 255, 0);
-			Mark(o->x() - ScrollX, o->y() - ScrollY);
-			if (showt && MouseX() > o->x() - 5 && MouseX() < o->x() + 5 && MouseY() > o->y() - 5 && MouseY() < o->y() + 5)
-				EdtFont->Text(o->Tag(), o->x(), o->y() + 6, Align::Center, Align::Top);
+			//std::cout << "Exit draw\n"; // debug
+			SetColor(100, 255, 0, 255);
+			Mark(dx,dy);
+			if (showt && MouseX() > dx - 5 && MouseX() < dx + 5 && MouseY() > dy - 5 && MouseY() < dy + 5)
+				EdtFont->Text(o->Tag(), dx, dy + 6, Align::Center, Align::Top);
 		}
 
 		static void _Custom(KthuraObject* o, int ScrollX, int ScrollY) {
@@ -206,6 +245,28 @@ namespace Slyvina {
 			auto Tex{ MyTexture::Tex(o->Kind(),o->texture()) };
 			Col(o);
 			Tex->Draw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
+		}
+
+		static KthuraRect _ObjSize(KthuraObject* o) {
+			auto Tex{ MyTexture::Tex(o->Kind(),o->texture())};
+			switch (o->Kind()) {
+			case KthuraKind::Picture:
+				return { o->x(),o->y(),Tex->Width(),Tex->Height() };
+			case KthuraKind::Actor:
+			case KthuraKind::Obstacle: 
+				return	{ 
+					(int)(o->x()-((Tex->Width()/2)*((double)o->scalex()/1000))),
+					(int)(o->y()-(Tex->Height()*((double)o->scaley()/1000))),
+					(int)(Tex->Width()*((double)o->scalex()/1000)),
+					(int)(Tex->Height() * ((double)o->scaley() / 1000))
+				};	
+			case KthuraKind::Pivot:
+			case KthuraKind::Exit:
+				// Editors will need it this way and it's also recommended to only use this for editors!
+				return { o->x() - 5,o->y() - 5, 11, 11 };
+			default:
+				return { 0,0,0,0 };
+			}
 		}
 
 
@@ -232,12 +293,12 @@ namespace Slyvina {
 
 		KthuraDraw Init_TQSG_For_Kthura(JT_Dir J) {
 			TexDir = J;
-			return std::unique_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver));
+			return std::unique_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver,_ObjSize));
 		}
 
 		KthuraDrawShared Init_TQSG_For_Kthura_Shared(JT_Dir J) {
 			TexDir = J;
-			return std::shared_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver));
+			return std::shared_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver,_ObjSize));
 		}
 #pragma endregion
 	}

@@ -41,12 +41,13 @@ namespace Slyvina {
 			}
 		}
 
-		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD) {
+		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize Sz) {
 			DrawFuncs = DF;
 			AllowDraw = AD;
+			_ObstacleSize = Sz;
 		}
 
-		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF) {
+		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF,FKthuraSize Sz) {
 			DrawFuncs = DF;
 			AllowDraw = {
 				{KthuraKind::Actor,true},
@@ -61,7 +62,44 @@ namespace Slyvina {
 				{KthuraKind::Unknown,false},
 				{KthuraKind::Zone,false}
 			};
+			_ObstacleSize = Sz;
 		}
+		KthuraRect _KthuraDraw::ObjectSize(KthuraObject* o) {
+			switch (o->Kind()) {
+			case KthuraKind::Unknown:
+				return { 0,0,0,0 };
+			case KthuraKind::TiledArea:
+			case KthuraKind::StretchedArea:
+			case KthuraKind::Rect:
+			case KthuraKind::Zone:
+				return { o->x(),o->y(),o->w(),o->h() };
+			case KthuraKind::Actor:
+			case KthuraKind::Obstacle:
+			case KthuraKind::Picture:
+				if (_ObstacleSize) return _ObstacleSize(o);
+				return { o->x(),o->y(),0,0 };
+			case KthuraKind::Exit:
+			case KthuraKind::Pivot:
+			case KthuraKind::Custom:
+				if (CheckPivotExitSelf) return _ObstacleSize(o);
+				return { o->x(),o->y(),0,0 };
+			}
+			return KthuraRect();
+		}
+		bool _KthuraDraw::InsideObject(KthuraObject* o, int x, int y) {
+			auto s{ ObjectSize(o) };
+			//*
+			if (o->Kind() == KthuraKind::Exit) {
+				printf("Obj #%3d; Click (%d,%d) -> (%d,%d) %dx%d\n", (int)o->ID(), x, y, s.x, s.y, s.w, s.h);
+			}
+			//*/
+			return
+				x >= s.x &&
+				y >= s.y &&
+				x <= s.x + s.w &&
+				y <= s.y + s.h;
+		}
+
 		void _KthuraDraw::DrawLayer(KthuraLayer* L, int insx, int insy) {
 #ifdef KTHDRAWDEBUG
 			printf("Draw Layer\n");

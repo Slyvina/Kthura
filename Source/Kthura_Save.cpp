@@ -59,6 +59,9 @@ namespace Slyvina {
 					ObjectsStr += TrSPrintF("\tFORCEPASSIBLE = %d\n", (int)O->forcepassible());
 					ObjectsStr += TrSPrintF("\tSCALE = %d,%d\n", O->scalex(), O->scaley());
 					ObjectsStr += TrSPrintF("\tBLEND = %d\n", O->blend());
+					auto dat{ O->data() };
+					for (auto& ditem : *dat)
+						ObjectsStr += "\tDATA." + ditem.first + " = " + ditem.second + "\n";
 				}
 			}
 			std::string S{ "Store" }; if (ObjectsStr.size() > 2048) S = storage;
