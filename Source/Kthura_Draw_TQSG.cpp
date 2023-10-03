@@ -269,6 +269,10 @@ namespace Slyvina {
 			}
 		}
 
+		static int _Frames(KthuraObject* o) {
+			auto Tex{ MyTexture::Tex(o->Kind(),o->texture()) };
+			return Tex->Frames();
+		}
 
 #pragma endregion
 
@@ -293,12 +297,12 @@ namespace Slyvina {
 
 		KthuraDraw Init_TQSG_For_Kthura(JT_Dir J) {
 			TexDir = J;
-			return std::unique_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver,_ObjSize));
+			return std::unique_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver,_ObjSize,_Frames));
 		}
 
 		KthuraDrawShared Init_TQSG_For_Kthura_Shared(JT_Dir J) {
 			TexDir = J;
-			return std::shared_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver,_ObjSize));
+			return std::shared_ptr<_KthuraDraw>(new _KthuraDraw(FuncDriver, _ObjSize, _Frames));
 		}
 #pragma endregion
 	}

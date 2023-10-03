@@ -32,6 +32,7 @@ namespace Slyvina {
 
 		typedef void (*FKthuraDrawObject)(KthuraObject*,int,int);
 		typedef KthuraRect (*FKthuraSize)(KthuraObject*);
+		typedef int (*FKthuraFrames)(KthuraObject*);
 
 		typedef std::map<KthuraKind, FKthuraDrawObject> DrawFuncMap;
 		typedef std::map<KthuraKind, bool> DrawAllowMap;
@@ -44,12 +45,15 @@ namespace Slyvina {
 			std::map<KthuraKind, FKthuraDrawObject> DrawFuncs{};
 			std::map<KthuraKind, bool> AllowDraw{};
 			void DrawObject(KthuraObject* o, int insx, int insy);			
-			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize FKS = nullptr);
-			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF,FKthuraSize FKS=nullptr);
+			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize FKS = nullptr, FKthuraFrames Fr = nullptr);
+			_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, FKthuraSize FKS = nullptr, FKthuraFrames Fr = nullptr);
 			FKthuraSize _ObstacleSize{ nullptr };
+			FKthuraFrames _Frames{ nullptr };
 
 			KthuraRect ObjectSize(KthuraObject* o);
 			bool InsideObject(KthuraObject* o, int x, int y);
+			int Frames(KthuraObject* o);
+			void Animate(KthuraObject* o);
 
 			void DrawLayer(KthuraLayer* L, int insx, int insy);
 		};

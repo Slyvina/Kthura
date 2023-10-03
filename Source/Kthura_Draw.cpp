@@ -30,6 +30,12 @@ namespace Slyvina {
 #ifdef KTHDRAWDEBUG
 			printf("Object #%d (%s); AllowKind: %d; Visible: %d\n", o->ID(), o->SKind().c_str(), AllowDraw[o->Kind()], o->visible());
 #endif
+			if (o->Kind() == KthuraKind::Actor) {
+				// Comes later!
+				
+			} else {
+				Animate(o);
+			}
 			if (o->visible() && AllowDraw[o->Kind()]) {
 				if (!DrawFuncs.count(o->Kind())) {
 					throw std::runtime_error("No function set to draw Kthura objects of kind: " + o->SKind());
@@ -41,13 +47,14 @@ namespace Slyvina {
 			}
 		}
 
-		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize Sz) {
+		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize Sz, FKthuraFrames Fr) {
 			DrawFuncs = DF;
 			AllowDraw = AD;
 			_ObstacleSize = Sz;
+			_Frames = Fr;
 		}
 
-		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF,FKthuraSize Sz) {
+		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF,FKthuraSize Sz,FKthuraFrames Fr) {
 			DrawFuncs = DF;
 			AllowDraw = {
 				{KthuraKind::Actor,true},
@@ -63,6 +70,7 @@ namespace Slyvina {
 				{KthuraKind::Zone,false}
 			};
 			_ObstacleSize = Sz;
+			_Frames = Fr;
 		}
 		KthuraRect _KthuraDraw::ObjectSize(KthuraObject* o) {
 			switch (o->Kind()) {
@@ -98,6 +106,31 @@ namespace Slyvina {
 				y >= s.y &&
 				x <= s.x + s.w &&
 				y <= s.y + s.h;
+		}
+
+		int _KthuraDraw::Frames(KthuraObject* o) {
+			switch (o->Kind()) {
+			case KthuraKind::TiledArea:
+			case KthuraKind::StretchedArea:
+			case KthuraKind::Actor:
+			case KthuraKind::Obstacle:
+			case KthuraKind::Picture:
+				if (_Frames) {
+					return std::max(1, _Frames(o));
+				}
+				// FALLTHROUGH! SO NO BREAK HERE!
+			default:
+				return 1;
+			}			
+		}
+
+		void _KthuraDraw::Animate(KthuraObject* o) {
+			if (o->animspeed() < 0) return;
+			//printf("Obj #%d >> Spd: %d; Skip: %d; Frame: %d/%d\n", (int)o->ID(),o->animspeed(),o->animskip(),o->animframe(),Frames(o)); // DEBUG!!!
+			o->animskip((o->animskip() + 1) % (o->animspeed() + 1));
+			if (o->animskip()==0) {
+				o->animframe((o->animframe() + 1) % Frames(o));
+			}
 		}
 
 		void _KthuraDraw::DrawLayer(KthuraLayer* L, int insx, int insy) {

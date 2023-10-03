@@ -484,6 +484,7 @@ namespace Slyvina {
 				w{ 0 },
 				h{ 0 },
 				animspeed{ -1 },
+				
 				insertx{ 0 },
 				inserty{ 0 },
 				scalex{ 1000 },
@@ -583,6 +584,7 @@ namespace Slyvina {
 		KthuraObjValRP(std::string, labels);
 		KthuraObjValRP(uint32, dominance);
 		KthuraObjVal(uint32, animframe);
+		KthuraObjVal(uint32, animskip);
 		KthuraObjVal(int32, animspeed);
 		KthuraObjVal(int32, insertx);
 		KthuraObjVal(int32, inserty);

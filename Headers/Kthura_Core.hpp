@@ -128,6 +128,7 @@ namespace Slyvina {
 			KthuraProp(std::string, labels);
 			KthuraProp(uint32, dominance);
 			KthuraProp(int32, animspeed);
+			KthuraProp(uint32, animskip);
 			KthuraProp(uint32, animframe);
 			KthuraProp(int32, insertx);
 			KthuraProp(int32, inserty);
@@ -222,6 +223,7 @@ namespace Slyvina {
 			inline void AutoRemap(bool onoff) { _autoRemap = onoff; PerformAutoRemap(); }
 			inline bool AutoRemap() { return _autoRemap; }	
 			inline KthuraObject* Spawn(std::string spot) { return KthuraObject::Spawn(this, spot); }
+			inline KthuraObject* Spawn(int x, int y) { return KthuraObject::Spawn(this, x, y); }
 			inline KthuraObject* operator[](std::string otag) { return Obj(otag); }
 			inline KthuraObject* operator[](int i) { return Obj(i); }
 		};
