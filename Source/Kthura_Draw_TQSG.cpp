@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Draw_TQSG.cpp
 // Kthura Draw TQSG driver
-// version: 23.09.28
+// version: 23.10.08
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -83,20 +83,26 @@ namespace Slyvina {
 			time_t LastCalled;
 
 			MyTexture() { LastCalled = 0; }
-			MyTexture(KthuraKind K,std::string Entry) {
+			MyTexture(KthuraKind K,std::string Entry) {				
 				auto gt{ TimeStamp() };
 				if (Trim(Entry) == "") {
 					DrvCrash("There's a texture request for an object (" + KindName(K) + "), but no texture file was there");
+					LastCalled = 0; // Warning prevention!
 					return;
 				}
 				LastCalled = gt;
 				Reg[K][Upper(Entry)] = *this;
 				_Tex = LoadImage(TexDir, Entry);
+				if (!_Tex) {
+					std::cout << "JCR6 report:" << JCR6::Last()->ErrorMessage << ";  Main: " << JCR6::Last()->MainFile << "; Entry: " << JCR6::Last()->Entry << "\n";
+					DrvCrash(TrSPrintF("Request to load texture '%s' for type '%s' has failed!\nLoader returned a null pointer!", Entry.c_str(), KindName(K).c_str()));
+					return;
+				}
 				if (!_Tex->Frames()) {
 					DrvCrash(TrSPrintF("Request to load texture '%s' for type '%s' has failed!\nNo frames", Entry.c_str(), KindName(K).c_str()));
 					return;
 				}
-				if (K == KthuraKind::Obstacle) {
+				if (K == KthuraKind::Obstacle || K==KthuraKind::Actor) {
 					// TODO: Take note of .hot files
 					_Tex->HotBottomCenter();
 				}
@@ -247,6 +253,28 @@ namespace Slyvina {
 			Tex->Draw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
 		}
 
+		static void _Actor(KthuraObject* o, int ScrollX, int ScrollY) {
+			auto scx{ (double)o->scalex() / 1000 };
+			auto scy{ (double)o->scaley() / 1000 };
+			auto Tex{ MyTexture::Tex(o->Kind(),o->texture()) };
+			Chat("Actor!");
+			Col(o);
+			SetScale(scx, scy);
+			Rotate(o->rotatedeg());
+#ifdef KD_TQSG_DEBUG
+			printf("Draw (%4d,%4d) (%d)   %dx%d(%f,%f);  #%02X%02X%02X(%d)\n", o->x() - ScrollX, o->y() - ScrollY, o->animframe(), o->scalex(), o->scaley(), scx, scy, o->red(), o->green(), o->blue(), o->alpha());
+#endif
+			if (!Tex) {
+				DrvCrash(TrSPrintF("Obstacle (%d) appears to have no valid texture! (%s)", o->ID(), o->texture()));
+				return;
+			}
+			o->animframe(o->animframe() % Tex->Frames());
+			Tex->XDraw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
+			//if (!(KeyDown(SDLK_SPACE))) { Flip(); do { Poll(); } while (!KeyDown(SDLK_SPACE)); } // DEBUG!
+			SetScale(1);
+			Rotate(0);		
+		}
+
 		static KthuraRect _ObjSize(KthuraObject* o) {
 			auto Tex{ MyTexture::Tex(o->Kind(),o->texture())};
 			switch (o->Kind()) {
@@ -291,8 +319,8 @@ namespace Slyvina {
 			{KthuraKind::Pivot,_Pivot},
 			{KthuraKind::Exit,_Exit},
 			{KthuraKind::Custom,_Custom},
-			{KthuraKind::Picture,_Pic}
-			
+			{KthuraKind::Picture,_Pic},
+			{KthuraKind::Actor,_Actor}
 		};
 
 		KthuraDraw Init_TQSG_For_Kthura(JT_Dir J) {

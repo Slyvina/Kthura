@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Headers/Kthura_Draw_TQSG.hpp
 // Kthura TQSG (header)
-// version: 23.09.27
+// version: 23.10.08
 // Copyright (C) 2015-2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages

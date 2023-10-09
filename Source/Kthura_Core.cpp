@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Core.cpp
 // Slyvina - Kthura Core
-// version: 23.09.28
+// version: 23.10.08
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -580,7 +580,9 @@ namespace Slyvina {
 		KthuraObjVal(bool, visible);
 		KthuraObjValRP(bool, impassible);
 		KthuraObjValRP(bool, forcepassible);
-		KthuraObjVal(std::string, texture);
+		//KthuraObjVal(std::string, texture);
+		void KthuraObject::texture(std::string t) { if (t != texture()) { _Obj->texture = t; _Obj->animframe = 0; } }
+		std::string KthuraObject::texture() { return _Obj->texture; }
 		KthuraObjValRP(std::string, labels);
 		KthuraObjValRP(uint32, dominance);
 		KthuraObjVal(uint32, animframe);
@@ -700,6 +702,7 @@ namespace Slyvina {
 		}
 
 		void KthuraObject::WalkTo(int to_x, int to_y, bool real) {
+			//printf("_Act = %d\n", _Act!=nullptr); 
 			if (!_Act) return;
 			auto gridx = _parent->gridx;
 			auto gridy = _parent->gridy;
@@ -713,6 +716,7 @@ namespace Slyvina {
 			}
 			//FoundPath = Dijkstra.QuickPath(Parent.PureBlockRev, Parent.BlockMapWidth, Parent.BlockMapHeight, fromx, fromy, tox, toy);
 			_Act->FoundPath = _Kthura::Walk.Route(&_Kthura::Walk, _parent, fromx, fromy, tox, toy);
+			printf("Actor.WalkTo(%d,%d,%d): Going from(%d,%d) to (%d,%d)  (Success: %d)\n", to_x, to_y, real, fromx, fromy, tox, toy, _Kthura::Walk.Succes(&_Kthura::Walk));
 			if (_Kthura::Walk.Succes(&_Kthura::Walk)) {
 				_Act->PathIndex = 0;
 				_Act->Walking = true;
@@ -734,10 +738,10 @@ namespace Slyvina {
 
 		void KthuraObject::UpdateMoves() {
 			if (_Act->Moving || _Act->Walking) {
-				if (_Act->MoveX < _Obj->x) { _Obj->x -= _Act->MoveSkip; if (_Obj->x < _Act->MoveX) _Obj->x = _Act->MoveX; if (_Act->AutoWind) _Act->Wind = "West"; }
-				if (_Act->MoveX > _Obj->x) { _Obj->x += _Act->MoveSkip; if (_Obj->x > _Act->MoveX) _Obj->x = _Act->MoveX; if (_Act->AutoWind) _Act->Wind = "East"; }
 				if (_Act->MoveY < _Obj->y) { _Obj->y -= _Act->MoveSkip; if (_Obj->y < _Act->MoveY) _Obj->y = _Act->MoveY; if (_Act->AutoWind) _Act->Wind = "North"; }
 				if (_Act->MoveY > _Obj->y) { _Obj->y += _Act->MoveSkip; if (_Obj->y > _Act->MoveY) _Obj->y = _Act->MoveY; if (_Act->AutoWind) _Act->Wind = "South"; }
+				if (_Act->MoveX < _Obj->x) { _Obj->x -= _Act->MoveSkip; if (_Obj->x < _Act->MoveX) _Obj->x = _Act->MoveX; if (_Act->AutoWind) _Act->Wind = "West"; }
+				if (_Act->MoveX > _Obj->x) { _Obj->x += _Act->MoveSkip; if (_Obj->x > _Act->MoveX) _Obj->x = _Act->MoveX; if (_Act->AutoWind) _Act->Wind = "East"; }
 				if (_Act->MoveX == _Obj->x && _Act->MoveY == _Obj->y) {
 					if (!_Act->Walking)
 						_Act->Moving = false;
@@ -815,168 +819,173 @@ namespace Slyvina {
 			if (!Resource->EntryExists(prefix + "Objects")) { Paniek("JCR6 resource doesn't appear to have the '" + prefix + "Objects' entry that Kthura needs"); return; }
 			auto entries{ Resource->Entries() };
 			for (auto ent : *entries) {
-				auto n = ent->Name().substr(prefix.size());
-				auto nu = Upper(n);
-				Chat("Processing entry: " << n);
-				if (nu == "DATA") {
-					Chat("Reading Data");
-					MetaData = Resource->GetStringMap(prefix + "Data");
-					if ((!MetaData) || Last()->Error) {
-						Paniek("Something went wrong reading data", "JCR6:" + Last()->ErrorMessage); return;
-					}
-				} else if (nu == "OBJECTS") {
-					Chat("Reading objects");
-					auto Source{ Resource->GetLines(prefix + "Objects") };
-					auto LayerScope{ false };
-					KthuraObject* co{ nullptr };
-					KthuraLayer* cl{ nullptr };
-					for (size_t _line = 0; _line < Source->size(); _line++) {
-						auto line{ _line + 1 }; // Chat("Parsing line: " << line << " (Vector position: " << _line << ") out of " << Source->size());
-						auto instruction{ Trim((*Source)[_line]) };
-						if (instruction == "" || Prefixed(instruction, "--")) {
-							// Do nothing at all. These lines have no values!
-						} else if (LayerScope) {
-							if (instruction == "__END") {
-								Chat("End Layer Scope");
-								LayerScope = false;
-							} else {
-								Chat("Creating new layer: " << instruction);
-								NewLayer(instruction)->AutoRemap(false);
-							}
-							Chat("Layer scope " << boolstring(LayerScope) << "; '" << instruction << "'" << "; HMMMM: " << boolstring(instruction == "__END"));
-						} else if (instruction == "LAYERS") {
-							LayerScope = true;
-						} else if (instruction == "NEW") {
-							if (!cl) { Paniek("Object without a layer", TrSPrintF("Line:%d", line)); return; }
-							co = cl->NewObject(KthuraKind::Unknown);
-							Chat("Objects in layer: " << cl->CountObjects());
-						} else {
-							auto isteken{ FindFirst(instruction,'=') };
-							if (isteken < 0) SyntaxError;
-							auto fld = Trim(instruction.substr(0, isteken));
-							auto val = Trim(instruction.substr(isteken + 1));
-							if (fld == "KIND") {
-								I_Want_An_Object;
-								co->IKind(KindName(val));
-								if (co->Kind() == KthuraKind::Unknown) { Paniek("Unknown kind", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
-								if (co->Kind() == KthuraKind::Actor) { Paniek("Actors cannot be defined through loading", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
-								if (co->Kind() == KthuraKind::Custom) co->CustomKind = val;
-							} else if (fld == "COORD") {
-								I_Want_An_Object;
-								auto cs = Split(val, ',');
-								if (cs->size() < 2) SyntaxError;
-								int32
-									x{ ToInt((*cs)[0]) },
-									y{ ToInt((*cs)[1]) };
-								co->x(x);
-								co->y(y);
-
-							} else if (fld == "INSERT") {
-								I_Want_An_Object;
-								auto cs = Split(val, ',');
-								if (cs->size() < 2) SyntaxError;
-								int32
-									x{ ToInt((*cs)[0]) },
-									y{ ToInt((*cs)[1]) };
-								co->insertx(x);
-								co->inserty(y);
-							} else if (fld == "ROTATION") {
-								I_Want_An_Object;
-								co->rotatedeg(ToInt(val)); // Please note! Rotations are only stored in degrees. That was first of all the BlitzMax standard what Kthura was originally in, but radians also force me to work in decimals and that's a recipe for disaster.
-							} else if (fld == "SIZE") {
-								I_Want_An_Object;
-								auto cs = Split(val, 'x');
-								if (cs->size() < 2) SyntaxError;
-								int32
-									w{ ToInt((*cs)[0]) },
-									h{ ToInt((*cs)[1]) };
-								co->w(w);
-								co->h(h);
-							} else if (fld == "TAG") {
-								I_Want_An_Object;
-								co->Tag(val);
-							} else if (fld == "LABELS") {
-								I_Want_An_Object;
-								co->labels(val);
-							} else if (fld == "DOMINANCE") {
-								I_Want_An_Object;
-								co->dominance(ToInt(val));
-							} else if (fld == "TEXTURE") {
-								I_Want_An_Object;
-								co->texture(val);
-							} else if (fld == "ANIMSPEED" || fld == "FRAMESPEED") {
-								I_Want_An_Object;
-								co->animspeed(ToInt(val));
-							} else if (fld == "ANIMFRAME" || fld == "CURRENTFRAME") {
-								I_Want_An_Object;
-								co->animframe(ToInt(val));
-							} else if (fld == "ALPHA") {
-								Paniek("The ALPHA field was deprecated ages ago and has by now officially been removed", TrSPrintF("Line:%d\nNote ALPHA255 should be used in stead!", line));
-								return;
-							} else if (fld == "ALPHA255") {
-								I_Want_An_Object;
-								co->alpha((byte)ToInt(val));
-							} else if (fld == "VISIBLE") {
-								I_Want_An_Object;
-								co->visible(ToInt(val) > 0);
-							} else if (fld == "COLOR") {
-								I_Want_An_Object;
-								auto cs = Split(val, ',');
-								if (cs->size() < 3) SyntaxError;
-								byte
-									r{ (byte)ToInt((*cs)[0]) },
-									g{ (byte)ToInt((*cs)[1]) },
-									b{ (byte)ToInt((*cs)[2]) };
-								co->red(r);
-								co->green(g);
-								co->blue(b);
-							} else if (fld == "IMPASSIBLE") {
-								I_Want_An_Object;
-								co->impassible(ToInt(val) > 0);
-							} else if (fld == "FORCEPASSIBLE") {
-								I_Want_An_Object;
-								co->forcepassible(ToInt(val) > 0);
-							} else if (fld == "SCALE") {
-								I_Want_An_Object;
-								auto cs = Split(val, ',');
-								if (cs->size() < 2) SyntaxError;
-								int32
-									x{ ToInt((*cs)[0]) },
-									y{ ToInt((*cs)[1]) };
-								co->scalex(x);
-								co->scaley(y);
-							} else if (fld == "BLEND") {
-								I_Want_An_Object;
-								co->blend(ToInt(val));
-							} else if (Prefixed(fld, "DATA.")) {
-								I_Want_An_Object;
-								auto dfld = fld.substr(5);
-								Chat("Defining data field: " << dfld << " = " << val);
-								co->data(dfld, val);
-							} else if (fld == "LAYER") {
-								if (cl) cl->AutoRemap(true);
-								if (!HasLayer(val)) { Paniek("Trying to switch to non-existent layer", TrSPrintF("Line:%d;Layer:%s", line, val.c_str())); return; }
-								cl = Layer(val);
-							} else if (fld == "BLOCKMAPGRID" || fld=="GRID") {
-								if (!cl) { Paniek("Grid definition without a layer", TrSPrintF("Line:%d", line)); return; }
-								auto cs = Split(val, 'x');
-								if (cs->size() < 2) SyntaxError;
-								int32
-									x{ ToInt((*cs)[0]) },
-									y{ ToInt((*cs)[1]) };
-								cl->gridx = x;
-								cl->gridy = y;
-
-							} else { Paniek("Unknown field!", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
+				auto
+					uename{ Upper(ent->Name()) },
+					uprefix{ Upper(prefix) };
+				if (Prefixed(uename,uprefix)) {
+					auto n = ent->Name().substr(prefix.size());
+					auto nu = Upper(n);
+					Chat("Processing entry: " << n);
+					if (nu == "DATA") {
+						Chat("Reading Data");
+						MetaData = Resource->GetStringMap(prefix + "Data");
+						if ((!MetaData) || Last()->Error) {
+							Paniek("Something went wrong reading data", "JCR6:" + Last()->ErrorMessage); return;
 						}
+					} else if (nu == "OBJECTS") {
+						Chat("Reading objects");
+						auto Source{ Resource->GetLines(prefix + "Objects") };
+						auto LayerScope{ false };
+						KthuraObject* co{ nullptr };
+						KthuraLayer* cl{ nullptr };
+						for (size_t _line = 0; _line < Source->size(); _line++) {
+							auto line{ _line + 1 }; // Chat("Parsing line: " << line << " (Vector position: " << _line << ") out of " << Source->size());
+							auto instruction{ Trim((*Source)[_line]) };
+							if (instruction == "" || Prefixed(instruction, "--")) {
+								// Do nothing at all. These lines have no values!
+							} else if (LayerScope) {
+								if (instruction == "__END") {
+									Chat("End Layer Scope");
+									LayerScope = false;
+								} else {
+									Chat("Creating new layer: " << instruction);
+									NewLayer(instruction)->AutoRemap(false);
+								}
+								Chat("Layer scope " << boolstring(LayerScope) << "; '" << instruction << "'" << "; HMMMM: " << boolstring(instruction == "__END"));
+							} else if (instruction == "LAYERS") {
+								LayerScope = true;
+							} else if (instruction == "NEW") {
+								if (!cl) { Paniek("Object without a layer", TrSPrintF("Line:%d", line)); return; }
+								co = cl->NewObject(KthuraKind::Unknown);
+								Chat("Objects in layer: " << cl->CountObjects());
+							} else {
+								auto isteken{ FindFirst(instruction,'=') };
+								if (isteken < 0) SyntaxError;
+								auto fld = Trim(instruction.substr(0, isteken));
+								auto val = Trim(instruction.substr(isteken + 1));
+								if (fld == "KIND") {
+									I_Want_An_Object;
+									co->IKind(KindName(val));
+									if (co->Kind() == KthuraKind::Unknown) { Paniek("Unknown kind", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
+									if (co->Kind() == KthuraKind::Actor) { Paniek("Actors cannot be defined through loading", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
+									if (co->Kind() == KthuraKind::Custom) co->CustomKind = val;
+								} else if (fld == "COORD") {
+									I_Want_An_Object;
+									auto cs = Split(val, ',');
+									if (cs->size() < 2) SyntaxError;
+									int32
+										x{ ToInt((*cs)[0]) },
+										y{ ToInt((*cs)[1]) };
+									co->x(x);
+									co->y(y);
+
+								} else if (fld == "INSERT") {
+									I_Want_An_Object;
+									auto cs = Split(val, ',');
+									if (cs->size() < 2) SyntaxError;
+									int32
+										x{ ToInt((*cs)[0]) },
+										y{ ToInt((*cs)[1]) };
+									co->insertx(x);
+									co->inserty(y);
+								} else if (fld == "ROTATION") {
+									I_Want_An_Object;
+									co->rotatedeg(ToInt(val)); // Please note! Rotations are only stored in degrees. That was first of all the BlitzMax standard what Kthura was originally in, but radians also force me to work in decimals and that's a recipe for disaster.
+								} else if (fld == "SIZE") {
+									I_Want_An_Object;
+									auto cs = Split(val, 'x');
+									if (cs->size() < 2) SyntaxError;
+									int32
+										w{ ToInt((*cs)[0]) },
+										h{ ToInt((*cs)[1]) };
+									co->w(w);
+									co->h(h);
+								} else if (fld == "TAG") {
+									I_Want_An_Object;
+									co->Tag(val);
+								} else if (fld == "LABELS") {
+									I_Want_An_Object;
+									co->labels(val);
+								} else if (fld == "DOMINANCE") {
+									I_Want_An_Object;
+									co->dominance(ToInt(val));
+								} else if (fld == "TEXTURE") {
+									I_Want_An_Object;
+									co->texture(val);
+								} else if (fld == "ANIMSPEED" || fld == "FRAMESPEED") {
+									I_Want_An_Object;
+									co->animspeed(ToInt(val));
+								} else if (fld == "ANIMFRAME" || fld == "CURRENTFRAME") {
+									I_Want_An_Object;
+									co->animframe(ToInt(val));
+								} else if (fld == "ALPHA") {
+									Paniek("The ALPHA field was deprecated ages ago and has by now officially been removed", TrSPrintF("Line:%d\nNote ALPHA255 should be used in stead!", line));
+									return;
+								} else if (fld == "ALPHA255") {
+									I_Want_An_Object;
+									co->alpha((byte)ToInt(val));
+								} else if (fld == "VISIBLE") {
+									I_Want_An_Object;
+									co->visible(ToInt(val) > 0);
+								} else if (fld == "COLOR") {
+									I_Want_An_Object;
+									auto cs = Split(val, ',');
+									if (cs->size() < 3) SyntaxError;
+									byte
+										r{ (byte)ToInt((*cs)[0]) },
+										g{ (byte)ToInt((*cs)[1]) },
+										b{ (byte)ToInt((*cs)[2]) };
+									co->red(r);
+									co->green(g);
+									co->blue(b);
+								} else if (fld == "IMPASSIBLE") {
+									I_Want_An_Object;
+									co->impassible(ToInt(val) > 0);
+								} else if (fld == "FORCEPASSIBLE") {
+									I_Want_An_Object;
+									co->forcepassible(ToInt(val) > 0);
+								} else if (fld == "SCALE") {
+									I_Want_An_Object;
+									auto cs = Split(val, ',');
+									if (cs->size() < 2) SyntaxError;
+									int32
+										x{ ToInt((*cs)[0]) },
+										y{ ToInt((*cs)[1]) };
+									co->scalex(x);
+									co->scaley(y);
+								} else if (fld == "BLEND") {
+									I_Want_An_Object;
+									co->blend(ToInt(val));
+								} else if (Prefixed(fld, "DATA.")) {
+									I_Want_An_Object;
+									auto dfld = fld.substr(5);
+									Chat("Defining data field: " << dfld << " = " << val);
+									co->data(dfld, val);
+								} else if (fld == "LAYER") {
+									if (cl) cl->AutoRemap(true);
+									if (!HasLayer(val)) { Paniek("Trying to switch to non-existent layer", TrSPrintF("Line:%d;Layer:%s", line, val.c_str())); return; }
+									cl = Layer(val);
+								} else if (fld == "BLOCKMAPGRID" || fld == "GRID") {
+									if (!cl) { Paniek("Grid definition without a layer", TrSPrintF("Line:%d", line)); return; }
+									auto cs = Split(val, 'x');
+									if (cs->size() < 2) SyntaxError;
+									int32
+										x{ ToInt((*cs)[0]) },
+										y{ ToInt((*cs)[1]) };
+									cl->gridx = x;
+									cl->gridy = y;
+
+								} else { Paniek("Unknown field!", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
+							}
+						}
+						if (cl) cl->AutoRemap(true);
+					} else if (nu == "OPTIONS") {
+						//cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
+						Options = ParseUGINIE(Resource->GetString(prefix + "Options"));
+					} else if (AllowUnknown) {
+						Chat("Loaded Uknown: " << n);
+						Unknown[n] = Resource->B(ent->Name());
 					}
-					if (cl) cl->AutoRemap(true);
-				} else if (nu == "OPTIONS") {
-					//cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
-					Options = ParseUGINIE(Resource->GetString(prefix + "Options"));
-				} else if (AllowUnknown) {
-					Chat("Loaded Uknown: " << n);
-					Unknown[n] = Resource->B(ent->Name());
 				}
 			}
 		}

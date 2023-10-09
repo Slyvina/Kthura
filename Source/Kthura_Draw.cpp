@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Draw.cpp
 // Kthura Draw
-// version: 23.09.28
+// version: 23.10.08
 // Copyright (C) 2015-2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -30,9 +30,11 @@ namespace Slyvina {
 #ifdef KTHDRAWDEBUG
 			printf("Object #%d (%s); AllowKind: %d; Visible: %d\n", o->ID(), o->SKind().c_str(), AllowDraw[o->Kind()], o->visible());
 #endif
-			if (o->Kind() == KthuraKind::Actor) {
-				// Comes later!
-				
+			if (o->Kind() == KthuraKind::Actor) {				
+				//int oldx{ o->x() };
+				//int oldy{ o->y() };				
+				o->UpdateMoves();
+				// actorsmoved = actorsmoved || oldx != x || oldy != y;
 			} else {
 				Animate(o);
 			}
@@ -96,7 +98,7 @@ namespace Slyvina {
 		}
 		bool _KthuraDraw::InsideObject(KthuraObject* o, int x, int y) {
 			auto s{ ObjectSize(o) };
-			//*
+			/*
 			if (o->Kind() == KthuraKind::Exit) {
 				printf("Obj #%3d; Click (%d,%d) -> (%d,%d) %dx%d\n", (int)o->ID(), x, y, s.x, s.y, s.w, s.h);
 			}
@@ -121,14 +123,17 @@ namespace Slyvina {
 				// FALLTHROUGH! SO NO BREAK HERE!
 			default:
 				return 1;
-			}			
+			}
+			
 		}
 
 		void _KthuraDraw::Animate(KthuraObject* o) {
 			if (o->animspeed() < 0) return;
+			//
 			//printf("Obj #%d >> Spd: %d; Skip: %d; Frame: %d/%d\n", (int)o->ID(),o->animspeed(),o->animskip(),o->animframe(),Frames(o)); // DEBUG!!!
 			o->animskip((o->animskip() + 1) % (o->animspeed() + 1));
 			if (o->animskip()==0) {
+				//printf("Frame %d -> %d => %d (Frames: %d)\n", o->animframe(), (o->animframe()+1), (o->animframe() + 1) % Frames(o), Frames(o));
 				o->animframe((o->animframe() + 1) % Frames(o));
 			}
 		}
