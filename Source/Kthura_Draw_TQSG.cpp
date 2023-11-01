@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Draw_TQSG.cpp
 // Kthura Draw TQSG driver
-// version: 23.10.08
+// version: 23.11.01
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -54,6 +54,7 @@ namespace Slyvina {
 		}
 
 		TQSGKTHURAPANIEK TQSG_Kthura_Panic{ nullptr };
+		bool AllowTexturelessActor{ true };
 
 		static void DrvCrash(std::string m) {
 			if (!TQSG_Kthura_Panic) TQSG_Kthura_Panic = DefaultCrash;
@@ -256,6 +257,7 @@ namespace Slyvina {
 		static void _Actor(KthuraObject* o, int ScrollX, int ScrollY) {
 			auto scx{ (double)o->scalex() / 1000 };
 			auto scy{ (double)o->scaley() / 1000 };
+			if (o->texture() == "" && AllowTexturelessActor) return; // Don't bother.
 			auto Tex{ MyTexture::Tex(o->Kind(),o->texture()) };
 			Chat("Actor!");
 			Col(o);

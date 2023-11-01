@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Headers/Kthura_Core.hpp
 // Slyvina - Kthura Core (header)
-// version: 23.10.08
+// version: 23.11.01
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -173,6 +173,8 @@ namespace Slyvina {
 			void WalkTo(int to_x, int to_y, bool real = true);
 			void WalkTo(KthuraObject* o);
 			void WalkTo(std::string oTag);
+			void StopWalking();
+			void StopMoving();
 		};
 
 		class KthuraLayer {
@@ -182,7 +184,7 @@ namespace Slyvina {
 			KthuraObject* _firstObject;
 			KthuraObject* _lastObject;
 			bool _modified{ false };
-			bool _autoRemap{ true };
+			static bool _autoRemap;
 			std::map<uint64, KthuraObject*> IDMap{};
 			std::map<std::string, KthuraObject*> TagMap{};
 			std::map<std::string, std::vector<KthuraObject*>> _LabelMap;
@@ -220,8 +222,8 @@ namespace Slyvina {
 			KthuraObject* NewTiledArea(int32 x = 0, int32 y = 0, int32 w = 0, int32 h = 0,std::string Texture="",std::string Tag="");
 			KthuraObject* NewObstacle(int32 x = 0, int32 y = 0, std::string Texture = "", std::string Tag = "");
 			inline ~KthuraLayer() { if (!DontKill) { KillAllObjects(); delete[] _BlockMap; } }
-			inline void AutoRemap(bool onoff) { _autoRemap = onoff; PerformAutoRemap(); }
-			inline bool AutoRemap() { return _autoRemap; }	
+			inline static void AutoRemap(bool onoff) { _autoRemap = onoff; /*PerformAutoRemap();*/ }
+			inline static bool AutoRemap() { return _autoRemap; }	
 			inline KthuraObject* Spawn(std::string spot) { return KthuraObject::Spawn(this, spot); }
 			inline KthuraObject* Spawn(int x, int y) { return KthuraObject::Spawn(this, x, y); }
 			inline KthuraObject* operator[](std::string otag) { return Obj(otag); }

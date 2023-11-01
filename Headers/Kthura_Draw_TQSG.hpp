@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Headers/Kthura_Draw_TQSG.hpp
 // Kthura TQSG (header)
-// version: 23.10.08
+// version: 23.11.01
 // Copyright (C) 2015-2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -29,6 +29,7 @@ namespace Slyvina {
 
 		typedef void (*TQSGKTHURAPANIEK)(std::string);
 		extern TQSGKTHURAPANIEK TQSG_Kthura_Panic;
+		extern bool AllowTexturelessActor;
 
 		/// <summary>
 		/// This function has only been implemented for editors which could require zones and exit points to be visible and have their tags shown on screen. That requires a font to be loaded. Other than that you can best leave this be.

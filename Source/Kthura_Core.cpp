@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Core.cpp
 // Slyvina - Kthura Core
-// version: 23.10.08
+// version: 23.11.01
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -435,6 +435,8 @@ namespace Slyvina {
 
 		}
 
+		bool KthuraLayer::_autoRemap{ true };
+
 		void KthuraLayer::TotalRemap() {
 			RemapTags();
 			RemapDominance();
@@ -536,6 +538,8 @@ namespace Slyvina {
 			int WalkingToX{ 0 }, WalkingToY{ 0 };
 			int PathIndex{ 0 };
 			std::vector<KthuraSpot> FoundPath{};
+			bool WalkAutoDom{ true }; // Will remap based on dominance when y coordinate changes
+			int WalkAutoDomOldY{ 0 };
 		};
 
 		KthuraObject::KthuraObject(KthuraObject* _after, KthuraLayer* _ouwe, KthuraKind k, uint64 _giveID) {
@@ -555,7 +559,8 @@ namespace Slyvina {
 		void KthuraObject::__KillMe(bool DisposeMe) {
 			if (_prev) _prev->_next = _next;
 			if (_next) _next->_prev = _prev;
-			if (DisposeMe) delete this;
+			if (DisposeMe) delete this;			
+			if (KthuraLayer::AutoRemap()) _parent->TotalRemap();
 		}
 
 
@@ -570,7 +575,18 @@ namespace Slyvina {
 
 		// All Objects
 		KthuraObjVal(int32, x);
-		KthuraObjVal(int32, y);
+		//KthuraObjVal(int32, y);
+		int KthuraObject::y() { return _Obj->y; }
+		void KthuraObject::y(int v) {
+			_Obj->y = v;
+			if (_Act) {
+				//cout << "DEBUG: AutoDom:" << _Act->WalkAutoDom << " OldY: " << _Act->WalkAutoDomOldY << "Y: "<<_Obj->y << endl; // DEBUG
+				if (_Act->WalkAutoDom && abs(_Act->WalkAutoDomOldY - _Obj->y) > 50) {
+					_parent->RemapDominance();
+					_Act->WalkAutoDomOldY = v;
+				}
+			}
+		}
 		KthuraObjVal(int32, w);
 		KthuraObjVal(int32, h);
 		KthuraObjVal(byte, r);
@@ -659,6 +675,7 @@ namespace Slyvina {
 			ret->impassible(false);
 			ret->forcepassible(false);
 			if (obj->data()->count("WIND")) ret->Wind(obj->data("Wind")); else ret->Wind("North");
+			parent->TotalRemap();
 			return ret;
 		}
 
@@ -675,6 +692,7 @@ namespace Slyvina {
 			ret->visible(true);
 			ret->impassible(false);
 			ret->forcepassible(false);
+			parent->TotalRemap();
 			return ret;
 		}
 
@@ -716,7 +734,7 @@ namespace Slyvina {
 			}
 			//FoundPath = Dijkstra.QuickPath(Parent.PureBlockRev, Parent.BlockMapWidth, Parent.BlockMapHeight, fromx, fromy, tox, toy);
 			_Act->FoundPath = _Kthura::Walk.Route(&_Kthura::Walk, _parent, fromx, fromy, tox, toy);
-			printf("Actor.WalkTo(%d,%d,%d): Going from(%d,%d) to (%d,%d)  (Success: %d)\n", to_x, to_y, real, fromx, fromy, tox, toy, _Kthura::Walk.Succes(&_Kthura::Walk));
+			//printf("Actor.WalkTo(%d,%d,%d): Going from(%d,%d) to (%d,%d)  (Success: %d)\n", to_x, to_y, real, fromx, fromy, tox, toy, _Kthura::Walk.Succes(&_Kthura::Walk));
 			if (_Kthura::Walk.Succes(&_Kthura::Walk)) {
 				_Act->PathIndex = 0;
 				_Act->Walking = true;
@@ -735,6 +753,17 @@ namespace Slyvina {
 		void KthuraObject::WalkTo(KthuraObject* o) { WalkTo(o->x(), o->y(), true); }
 
 		void KthuraObject::WalkTo(std::string oTag) { WalkTo(_parent->Obj(oTag)); }
+
+		void KthuraObject::StopWalking() {
+			if (!_Act) return;
+			_Act->Moving = false;
+			_Act->Walking = false;
+		}
+
+		void KthuraObject::StopMoving() {
+			if (!_Act) return;
+			_Act->Moving = false;
+		}
 
 		void KthuraObject::UpdateMoves() {
 			if (_Act->Moving || _Act->Walking) {
@@ -768,6 +797,14 @@ namespace Slyvina {
 					_Obj->animframe++;
 				}
 			} else if (_Act->WalkingIsInMotion && (!_Act->Walking)) _Obj->animframe = 0;
+			if (_Act) {
+				//cout << "DEBUG: AutoDom:" << _Act->WalkAutoDom << " OldY: " << _Act->WalkAutoDomOldY << "Y: "<<_Obj->y << endl; // DEBUG
+				if (_Act->WalkAutoDom && abs(_Act->WalkAutoDomOldY - _Obj->y) > 50) {
+					_parent->RemapDominance();
+					_Act->WalkAutoDomOldY = _Obj->y;
+				}
+			}
+
 		}
 
 
