@@ -103,9 +103,11 @@ namespace Slyvina {
 					DrvCrash(TrSPrintF("Request to load texture '%s' for type '%s' has failed!\nNo frames", Entry.c_str(), KindName(K).c_str()));
 					return;
 				}
-				if (K == KthuraKind::Obstacle || K==KthuraKind::Actor) {
-					// TODO: Take note of .hot files
-					_Tex->HotBottomCenter();
+				if (K == KthuraKind::Obstacle || K==KthuraKind::Actor) {					
+					auto hotfile{ StripExt(Entry) + ".hot" };
+					if (!TexDir->EntryExists(hotfile))
+						_Tex->HotBottomCenter();
+					// When a hotfile exists, that takes priority over this, and TQSG will then already set it right by itself.
 				}
 				Chat("Texture loaded: " + Entry + "; (" + KindName(K) + ")");
 			}
