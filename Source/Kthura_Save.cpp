@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Save.cpp
 // Slyvina - Kthura - Save
-// version: 23.10.08
+// version: 23.12.24
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -79,6 +79,10 @@ namespace Slyvina {
 
 		void Kthura_Save(Kthura M, std::string File, std::string Dir, std::string storage, std::string Author, std::string Notes) {
 			auto J{ JCR6::CreateJCR6(File) };
+			if (!J) {
+				std::cout << "ERROR! Failed to create '" << File << "'!\n";
+				return;
+			}
 			Kthura_Save(M, J, Dir, storage);
 			J->Close();
 		}

@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Headers/Kthura_Core.hpp
 // Slyvina - Kthura Core (header)
-// version: 23.11.01
+// version: 23.11.21
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -42,6 +42,16 @@ namespace Slyvina {
 
 		typedef  void (*KthuraPanicFunction)(std::string errormessage, std::string xdata);
 		extern KthuraPanicFunction KthuraPanic;
+
+		/// <summary>
+		/// If set to TRUE. The deprecated ALPHA tag will be read and only lead to a warning. (Done for KthuraTransfer).
+		/// </summary>
+		extern bool OldAlpha; 
+
+		/// <summary>
+		/// If set to TRUE dupe tags will automatically be fixed. Only handy for transfer tools or fixing tools.
+		/// </summary>
+		extern bool AutoRetag;
 
 
 		struct __KthuraObjectData;
@@ -216,6 +226,9 @@ namespace Slyvina {
 			inline int BlockWidth() { return _BlockW; }
 			inline int BlockHeight() { return _BlockH; }
 			void BuildBlockmap();
+			void VisibilityByLabel(std::string Label, bool value);
+			inline void HideByLabel(std::string L) { VisibilityByLabel(L, false); }
+			inline void ShowByLabel(std::string L) { VisibilityByLabel(L, true); }
 			inline KthuraObject* FirstObject() { return _firstObject; }
 			KthuraObject* Obj(uint64 i);
 			KthuraObject* Obj(std::string _tag);

@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Core.cpp
 // Slyvina - Kthura Core
-// version: 23.11.01
+// version: 23.12.24
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -51,6 +51,9 @@ using namespace Slyvina::JCR6;
 
 namespace Slyvina {
 	namespace Kthura {
+
+		bool OldAlpha{ false };
+		bool AutoRetag{ false };
 
 #pragma region Panic
 		KthuraPanicFunction KthuraPanic{ nullptr };
@@ -138,7 +141,11 @@ namespace Slyvina {
 		}
 
 		void KthuraLayer::Kill(KthuraObject* k) {
-			if (k->Parent() != this) { Paniek("Alien object kill requested!"); return; }
+			if (k->Parent() != this) { 
+				throw runtime_error("Alien object kill: " + to_string(k->ID()) + "::" + k->Tag() + "::" + k->SKind());
+				Paniek("Alien object kill requested!"); 
+				return; 
+			}
 			if (_firstObject == k) _firstObject = _firstObject->Next();
 			if (!k->Next()) _lastObject = k->Prev();
 			if (!_lastObject) _firstObject = nullptr;
@@ -175,7 +182,18 @@ namespace Slyvina {
 			TagMap.clear();
 			for (auto o = _firstObject; o; o = o->Next()) {
 				if (o->Tag().size()) {
-					if (TagMap.count(Upper(o->Tag()))) Paniek("RemapTags(): Dupe tag (" + o->Tag() + ")");
+					if (TagMap.count(Upper(o->Tag()))) {
+						if (AutoRetag) {
+							cout << "\x1b[31mERROR!\x1b[37m Dupe Tag! (" + o->Tag() + ") autoretagging to: ";
+							static size_t rt{0};
+							string newtag;
+							do { newtag = o->Tag() + TrSPrintF("__retag_%x", ++rt); } while (HasTag(newtag));
+							o->Tag(newtag);
+							cout << newtag << "\n";
+						} else {
+							Paniek("RemapTags(): Dupe tag (" + o->Tag() + ")");
+						}
+					}
 					TagMap[Upper(o->Tag())] = o;
 				}
 			}
@@ -441,7 +459,7 @@ namespace Slyvina {
 			RemapTags();
 			RemapDominance();
 			RemapID();
-#pragma message ("Still gotta do remapping by labels")
+			RemapLabels();
 			BuildBlockmap();
 			_modified = false;
 		}
@@ -464,6 +482,13 @@ namespace Slyvina {
 			_lastObject = o;
 			_modified = true;
 			return o;
+		}
+
+		void KthuraLayer::VisibilityByLabel(std::string Label, bool value) {
+			Trans2Upper(Label);
+			if (!_LabelMap.count(Label)) return;
+			auto LO{ &_LabelMap[Label] };
+			for (auto o : *LO) o->visible(value);
 		}
 
 		KthuraObject* KthuraLayer::Obj(uint64 i) {
@@ -854,7 +879,7 @@ namespace Slyvina {
 			if (prefix.size() && (!Suffixed(prefix, "/"))) prefix += "/";
 			if (!Resource->EntryExists(prefix + "Data")) { Paniek("JCR6 resource doesn't appear to have the '" + prefix + "Data' entry that Kthura needs"); return; }
 			if (!Resource->EntryExists(prefix + "Objects")) { Paniek("JCR6 resource doesn't appear to have the '" + prefix + "Objects' entry that Kthura needs"); return; }
-			auto entries{ Resource->Entries() };
+			auto entries{ Resource->Entries() };			
 			for (auto ent : *entries) {
 				auto
 					uename{ Upper(ent->Name()) },
@@ -900,6 +925,15 @@ namespace Slyvina {
 								if (isteken < 0) SyntaxError;
 								auto fld = Trim(instruction.substr(0, isteken));
 								auto val = Trim(instruction.substr(isteken + 1));
+								if (OldAlpha && fld == "ALPHA") {
+									fld = "ALPHA255";
+									double a1 = stod(val);
+									double a255 = 255 * a1;
+									int a255i = (int)floor(a255);
+									val = to_string(a255i);
+									cout << "\x1b[31mWARNING!!!\7\x1b[0m ALPHA deprecated! Will convert to ALPHA255 (Line #" << line << ")\n";
+									cout << "\t=>" << a1 << " -> " << a255 << " -> " << a255i << "\n";
+								}
 								if (fld == "KIND") {
 									I_Want_An_Object;
 									co->IKind(KindName(val));
@@ -999,7 +1033,7 @@ namespace Slyvina {
 									Chat("Defining data field: " << dfld << " = " << val);
 									co->data(dfld, val);
 								} else if (fld == "LAYER") {
-									if (cl) cl->AutoRemap(true);
+									//if (cl) cl->AutoRemap(true);
 									if (!HasLayer(val)) { Paniek("Trying to switch to non-existent layer", TrSPrintF("Line:%d;Layer:%s", line, val.c_str())); return; }
 									cl = Layer(val);
 								} else if (fld == "BLOCKMAPGRID" || fld == "GRID") {
@@ -1015,7 +1049,10 @@ namespace Slyvina {
 								} else { Paniek("Unknown field!", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
 							}
 						}
-						if (cl) cl->AutoRemap(true);
+						//if (cl) cl->AutoRemap(true);						
+						auto L{ Layers() };
+						for (auto arl : *L) Layer(arl)->AutoRemap(true);
+						
 					} else if (nu == "OPTIONS") {
 						//cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
 						Options = ParseUGINIE(Resource->GetString(prefix + "Options"));

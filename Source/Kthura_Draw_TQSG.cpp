@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Draw_TQSG.cpp
 // Kthura Draw TQSG driver
-// version: 23.11.01
+// version: 23.11.21
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
