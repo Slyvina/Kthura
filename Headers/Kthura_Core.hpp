@@ -40,6 +40,9 @@ namespace Slyvina {
 		typedef std::unique_ptr<_Kthura> UKthura; // Type used to store a Kthura map at a unique pointer
 		typedef std::shared_ptr<_Kthura> Kthura; // Type used to store a Kthura map to a shared pointer. 
 
+		typedef Kthura(*KthuraLoader)(Slyvina::JCR6::JT_Dir J, std::string prefix);
+		typedef bool(*KthuraRecognizer)(Slyvina::JCR6::JT_Dir J, std::string prefix);
+
 		typedef  void (*KthuraPanicFunction)(std::string errormessage, std::string xdata);
 		extern KthuraPanicFunction KthuraPanic;
 
@@ -90,6 +93,7 @@ namespace Slyvina {
 			void KillLayer(std::string Lay, bool ignoreifnonexistent = false);
 
 			_Kthura(Slyvina::JCR6::JT_Dir Resource, std::string prefix = "");
+			inline _Kthura(bool Base) { if (Base) NewLayer("__BASE"); }
 			inline _Kthura() { NewLayer("__BASE"); }
 
 			KthuraLayer* operator[](std::string laytag);
@@ -252,6 +256,12 @@ namespace Slyvina {
 		inline Kthura CreateKthura() { return std::make_shared<_Kthura>(); }
 		inline UKthura CreateUniqueKthura() { return std::make_unique<_Kthura>(); }
 
+		void RegisterKthuraLoader(std::string Name,KthuraLoader KL,KthuraRecognizer KR);
+
+		std::string XRecognizeKthura(Slyvina::JCR6::JT_Dir J, std::string prefix = "");
+		Kthura XLoadKthura(Slyvina::JCR6::JT_Dir J, std::string prefix = "");
+		inline std::string XRecognizeKthura(std::string J, std::string prefix = "") { return XRecognizeKthura(Slyvina::JCR6::JCR6_Dir(J), prefix); }
+		inline Kthura XLoadKthura(std::string  J, std::string prefix = "") { return XLoadKthura(Slyvina::JCR6::JCR6_Dir(J), prefix); }
 
 		class KthuraWalk {
 		private:

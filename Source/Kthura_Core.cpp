@@ -55,6 +55,18 @@ namespace Slyvina {
 		bool OldAlpha{ false };
 		bool AutoRetag{ false };
 
+#pragma region "Loader Data"
+		struct RegKL { KthuraLoader Loader{ nullptr }; KthuraRecognizer Recognize{ nullptr }; };
+		static Kthura DefaultLoader(JT_Dir D, string pref) { return LoadKthura(D, pref); }
+		static bool DefaultRecognizer(JT_Dir D,string prefix) {
+			if (prefix.size() && (!Suffixed(prefix, "/"))) prefix += "/";
+			return D->EntryExists(prefix + "Objects") && D->EntryExists(prefix + "Data");
+		}
+		map<string, RegKL> RegKthuraLoader {
+			{"default", { DefaultLoader,DefaultRecognizer }}
+		};
+#pragma endregion
+
 #pragma region Panic
 		KthuraPanicFunction KthuraPanic{ nullptr };
 
@@ -1084,6 +1096,34 @@ namespace Slyvina {
 			}
 			return std::make_unique<_Kthura>(J, prefix);
 		}
+
 #pragma endregion
+
+#pragma region XLoader
+		void RegisterKthuraLoader(std::string Name, KthuraLoader KL, KthuraRecognizer KR) {
+			Trans2Upper(Name);
+			auto NR{ &RegKthuraLoader[Name] };
+			NR->Loader = KL;
+			NR->Recognize = KR;
+		}
+
+		std::string XRecognizeKthura(Slyvina::JCR6::JT_Dir J, std::string prefix) {			
+			for (auto XRK : RegKthuraLoader) {
+				if (XRK.second.Recognize(J, prefix)) return XRK.first;
+			}
+			return "unknown";
+		}
+
+		Kthura XLoadKthura(Slyvina::JCR6::JT_Dir J, std::string prefix ) {
+			auto drv{ XRecognizeKthura(J,prefix) };
+			if (drv == "unknown") {
+				Paniek("Tried to load a Kthura Map through XLoadKthura without a known driver"); return nullptr;
+			}
+			if (!RegKthuraLoader.count(drv)) {
+				Paniek("Internal error! Recognized as driver '"+drv+"' which doesn't exist! Please report!"); return nullptr;
+			}
+			return RegKthuraLoader[drv].Loader(J, prefix);
+		}
 	}
+#pragma endregion
 }
