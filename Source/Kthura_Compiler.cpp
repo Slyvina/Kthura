@@ -17,7 +17,7 @@
 // misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 // EndLic
-#define KC_DEBUG
+#undef KC_DEBUG
 
 #include "../Headers/Kthura_Compiler.hpp"
 
@@ -130,6 +130,7 @@ namespace Slyvina {
 				}
 				BT->Write(di.first);
 			}
+			BT->Write((byte)0);
 			BT->Close();
 
 			// Meta Data
@@ -186,14 +187,17 @@ namespace Slyvina {
 					WS(BT, o->labels(), size, Dict);
 					BT->WriteByte(17);
 					WS(BT, o->Tag(), size, Dict);
-					BT->WriteByte(17);
+					BT->WriteByte(18);
 					BT->Write((byte)o->visible());
 					for (auto di : *data) {
-						BT->WriteByte(18);
+						BT->WriteByte(19);
 						WS(BT, di.first, size, Dict);
 						WS(BT, di.second, size, Dict);
 					}
 				}
+			BT->WriteByte(255);
+			BT->Write(lay->gridx);
+			BT->Write(lay->gridy);
 			}
 			BT->WriteByte(0); // The end
 			BT->Close();
