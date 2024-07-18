@@ -1,7 +1,7 @@
 // Lic:
 // Kthura/Source/Kthura_Compiler.cpp
 // Kthura Compiler
-// version: 24.03.22
+// version: 24.07.18
 // Copyright (C) 2024 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
