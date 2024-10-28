@@ -1,3 +1,26 @@
+// License:
+// 	Kthura/Source/Kthura_LoadCompiled.cpp
+// 	Compiled Kthura Map Leader
+// 	version: 24.10.28
+// 
+// 	Copyright (C) 2024 Jeroen P. Broks
+// 
+// 	This software is provided 'as-is', without any express or implied
+// 	warranty.  In no event will the authors be held liable for any damages
+// 	arising from the use of this software.
+// 
+// 	Permission is granted to anyone to use this software for any purpose,
+// 	including commercial applications, and to alter it and redistribute it
+// 	freely, subject to the following restrictions:
+// 
+// 	1. The origin of this software must not be misrepresented; you must not
+// 	   claim that you wrote the original software. If you use this software
+// 	   in a product, an acknowledgment in the product documentation would be
+// 	   appreciated but is not required.
+// 	2. Altered source versions must be plainly marked as such, and must not be
+// 	   misrepresented as being the original software.
+// 	3. This notice may not be removed or altered from any source distribution.
+// End License
 // Lic:
 // Kthura/Source/Kthura_LoadCompiled.cpp
 // Compiled Kthura Map Leader
@@ -28,6 +51,8 @@
 #define Chat(AAA)
 #endif
 
+using namespace Slyvina::Units;
+
 namespace Slyvina {
 	namespace Kthura {
 
@@ -37,7 +62,7 @@ namespace Slyvina {
 
 #define WR() _WR(BT,Dict); if (_ErrorLog.size()) return
 #define WRF(F) F(_WR(BT,Dict)); if (_ErrorLog.size()) return
-		static std::string _WR(Bank BT, std::map < uint64, std::string>& Dict) {
+		static std::string _WR(Units::Bank BT, std::map < uint64, std::string>& Dict) {
 			//uint64 idx{ 0 };
 			Byte Siz{ BT->ReadByte() }; Chat("GetDictString: Size: " << (int)Siz << TrSPrintF(" (Position %d::%x)",BT->Position(), BT->Position()));
 			switch (Siz) {
