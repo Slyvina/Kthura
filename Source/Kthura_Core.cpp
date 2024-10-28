@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Source/Kthura_Core.cpp
 // 	Slyvina - Kthura Core
-// 	version: 24.10.10 I
+// 	version: 24.10.28
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -21,7 +21,9 @@
 // 	   misrepresented as being the original software.
 // 	3. This notice may not be removed or altered from any source distribution.
 // End License
+
 #include <iostream>
+#include <math.h>
 #include <SlyvString.hpp>
 #include <SlyvSTOI.hpp>
 #include <Kthura_Core.hpp>
