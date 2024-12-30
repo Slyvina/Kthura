@@ -250,6 +250,12 @@ namespace Slyvina {
 			inline KthuraObject* Spawn(int x, int y) { return KthuraObject::Spawn(this, x, y); }
 			inline KthuraObject* operator[](std::string otag) { return Obj(otag); }
 			inline KthuraObject* operator[](int i) { return Obj(i); }
+			void Tags(std::vector<String>* vec);
+			inline void Tags(VecString vec) { Tags(vec.get()); }
+			inline VecString Tags() {
+				auto vec{ NewVecString() };
+				Tags(vec);
+			}
 		};
 
 

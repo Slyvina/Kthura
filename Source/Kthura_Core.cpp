@@ -471,6 +471,11 @@ namespace Slyvina {
 
 		}
 
+		void KthuraLayer::Tags(std::vector<String>* vec) {
+			vec->clear();
+			for (auto t : TagMap) vec->push_back(t.first);
+		}
+
 		bool KthuraLayer::_autoRemap{ true };
 
 		void KthuraLayer::TotalRemap() {
