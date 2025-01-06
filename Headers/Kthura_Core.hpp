@@ -1,9 +1,9 @@
 // License:
 // 	Kthura/Headers/Kthura_Core.hpp
 // 	Slyvina - Kthura Core (header)
-// 	version: 24.10.10 I
+// 	version: 25.01.06
 // 
-// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -95,6 +95,7 @@ namespace Slyvina {
 			KthuraLayer* NewLayer(std::string Lay, bool nopanic = false);
 			void RenameLayer(std::string OldLay, std::string NewLay, bool nopanic = false);
 			void KillLayer(std::string Lay, bool ignoreifnonexistent = false);
+			void AutoRemap(bool value);
 
 			_Kthura(Slyvina::JCR6::JT_Dir Resource, std::string prefix = "");
 			inline _Kthura(bool Base) { if (Base) NewLayer("__BASE"); }
@@ -127,6 +128,8 @@ namespace Slyvina {
 			inline KthuraKind Kind() { return _Kind; }
 			inline void IKind(KthuraKind K) { if (_Kind == KthuraKind::Unknown) _Kind = K; }
 			std::string SKind();
+			void SKind(std::string k);
+			bool HasLabel(std::string L);
 
 			// Yeah, these are quick defintions done by macros.
 			// I do NOT need you to tell me that this is bad practise, because I already know and I don't care!
@@ -236,8 +239,11 @@ namespace Slyvina {
 			inline int BlockHeight() { return _BlockH; }
 			void BuildBlockmap();
 			void VisibilityByLabel(std::string Label, bool value);
+			void VisibilityButLabel(std::string Label, bool value);			
 			inline void HideByLabel(std::string L) { VisibilityByLabel(L, false); }
 			inline void ShowByLabel(std::string L) { VisibilityByLabel(L, true); }
+			inline void HideButLabel(String L) { VisibilityButLabel(L, false); }
+			inline void ShowButLabel(String L) { VisibilityButLabel(L, true); }
 			inline KthuraObject* FirstObject() { return _firstObject; }
 			KthuraObject* Obj(uint64 i);
 			KthuraObject* Obj(std::string _tag);
