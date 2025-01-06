@@ -1,9 +1,9 @@
 // License:
 // 	Kthura/Source/Kthura_Core.cpp
 // 	Slyvina - Kthura Core
-// 	version: 24.10.28
+// 	version: 25.01.06
 // 
-// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -149,6 +149,10 @@ namespace Slyvina {
 			}
 		}
 
+		void _Kthura::AutoRemap(bool value) {
+			for (auto &l : _Layers) _Layers[l.first].AutoRemap(value);
+		}
+
 		void KthuraLayer::PerformAutoRemap() {
 			if (_modified && _autoRemap) {
 				TotalRemap();
@@ -160,7 +164,7 @@ namespace Slyvina {
 
 		void KthuraLayer::Kill(KthuraObject* k) {
 			if (k->Parent() != this) { 
-				throw runtime_error("Alien object kill: " + to_string(k->ID()) + "::" + k->Tag() + "::" + k->SKind());
+				//throw runtime_error("Alien object kill: " + to_string(k->ID()) + "::" + k->Tag() + "::" + k->SKind());
 				Paniek("Alien object kill requested!"); 
 				return; 
 			}
@@ -508,7 +512,9 @@ namespace Slyvina {
 		}
 
 		KthuraObject* KthuraLayer::NewObject(std::string knd) {
-			return NewObject(KindName(knd));
+			auto o{ NewObject(KindName(knd)) };
+			o->SKind(knd);
+			return o;
 		}
 
 		void KthuraLayer::VisibilityByLabel(std::string Label, bool value) {
@@ -517,6 +523,14 @@ namespace Slyvina {
 			auto LO{ &_LabelMap[Label] };
 			for (auto o : *LO) o->visible(value);
 		}
+
+		void KthuraLayer::VisibilityButLabel(std::string Label, bool value) {
+			Trans2Upper(Label);
+			for (auto o = FirstObject(); o; o = o->Next()) {
+				o->visible(!value ? o->HasLabel(Label) : !o->HasLabel(Label));
+			}
+		}
+
 
 		KthuraObject* KthuraLayer::Obj(uint64 i) {
 			if (HasID(i)) return IDMap[i];
@@ -894,6 +908,18 @@ namespace Slyvina {
 		}
 		std::string KthuraObject::SKind() { 
 			if (_Kind == KthuraKind::Custom) return CustomKind; else return KindName(_Kind); 
+		}
+		void KthuraObject::SKind(std::string k) {
+			_Kind = KindName(k);
+			if (k[0] =='$') CustomKind = k;
+			// cout << "DEBUG! Kind of Object #" << ID() << " is " << SKind() << "!\n"; // DEBUG ONLY!
+		}
+		bool KthuraObject::HasLabel(std::string L) {
+			Trans2Upper(L);
+			if (labels() == "") return false;
+			auto l{ Split(labels(),',') };
+			for (auto cl : *l) if (Upper(cl) == L) return true;
+			return false;
 		}
 #pragma endregion
 
