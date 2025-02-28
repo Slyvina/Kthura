@@ -1,3 +1,26 @@
+// License:
+// 	Kthura/Source/Kthura_Draw_TQSG.cpp
+// 	Kthura Draw TQSG driver
+// 	version: 25.03.01
+// 
+// 	Copyright (C) 2023, 2025 Jeroen P. Broks
+// 
+// 	This software is provided 'as-is', without any express or implied
+// 	warranty.  In no event will the authors be held liable for any damages
+// 	arising from the use of this software.
+// 
+// 	Permission is granted to anyone to use this software for any purpose,
+// 	including commercial applications, and to alter it and redistribute it
+// 	freely, subject to the following restrictions:
+// 
+// 	1. The origin of this software must not be misrepresented; you must not
+// 	   claim that you wrote the original software. If you use this software
+// 	   in a product, an acknowledgment in the product documentation would be
+// 	   appreciated but is not required.
+// 	2. Altered source versions must be plainly marked as such, and must not be
+// 	   misrepresented as being the original software.
+// 	3. This notice may not be removed or altered from any source distribution.
+// End License
 // Lic:
 // Kthura/Source/Kthura_Draw_TQSG.cpp
 // Kthura Draw TQSG driver
@@ -84,7 +107,7 @@ namespace Slyvina {
 			time_t LastCalled;
 
 			MyTexture() { LastCalled = 0; }
-			MyTexture(KthuraKind K,std::string Entry) {				
+			MyTexture(KthuraKind K,std::string Entry) {
 				auto gt{ TimeStamp() };
 				if (Trim(Entry) == "") {
 					DrvCrash("There's a texture request for an object (" + KindName(K) + "), but no texture file was there");
@@ -103,7 +126,7 @@ namespace Slyvina {
 					DrvCrash(TrSPrintF("Request to load texture '%s' for type '%s' has failed!\nNo frames", Entry.c_str(), KindName(K).c_str()));
 					return;
 				}
-				if (K == KthuraKind::Obstacle || K==KthuraKind::Actor) {					
+				if (K == KthuraKind::Obstacle || K==KthuraKind::Actor) {
 					auto hotfile{ StripExt(Entry) + ".hot" };
 					if (!TexDir->EntryExists(hotfile))
 						_Tex->HotBottomCenter();
@@ -112,13 +135,13 @@ namespace Slyvina {
 				Chat("Texture loaded: " + Entry + "; (" + KindName(K) + ")");
 			}
 
-			inline TImage Tex() { 
-				LastCalled = TimeStamp();  
+			inline TImage Tex() {
+				LastCalled = TimeStamp();
 				if (abs(TimeStamp() - CleanCnt) > cleanupreset) {
 					AutoKill();
 					CleanCnt = TimeStamp();
 				}
-				return _Tex; 
+				return _Tex;
 			}
 			static inline TImage Tex(KthuraKind K, std::string T) {
 				if (K == KthuraKind::Exit || K == KthuraKind::Pivot) return nullptr;
@@ -213,11 +236,11 @@ namespace Slyvina {
 			Tex->StretchDraw(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe());
 		}
 
-		static void Mark(int x, int y) {		
+		static void Mark(int x, int y) {
 			ARect(x - 5, y - 5, 11, 11, true);
 			ALine(x - 5, y, x + 5, y);
 			ALine(x, y - 5, x, y + 5);
-			//printf("Draw Mark (%d,%d)\n", x, y); // debug 
+			//printf("Draw Mark (%d,%d)\n", x, y); // debug
 		}
 
 		static void _Pivot(KthuraObject* o, int ScrollX, int ScrollY) {
@@ -276,7 +299,7 @@ namespace Slyvina {
 			Tex->XDraw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
 			//if (!(KeyDown(SDLK_SPACE))) { Flip(); do { Poll(); } while (!KeyDown(SDLK_SPACE)); } // DEBUG!
 			SetScale(1);
-			Rotate(0);		
+			Rotate(0);
 		}
 
 		static KthuraRect _ObjSize(KthuraObject* o) {
@@ -285,15 +308,16 @@ namespace Slyvina {
 			case KthuraKind::Picture:
 				return { o->x(),o->y(),Tex->Width(),Tex->Height() };
 			case KthuraKind::Actor:
-			case KthuraKind::Obstacle: 
-				return	{ 
+			case KthuraKind::Obstacle:
+				return	{
 					(int)(o->x()-((Tex->Width()/2)*((double)o->scalex()/1000))),
 					(int)(o->y()-(Tex->Height()*((double)o->scaley()/1000))),
 					(int)(Tex->Width()*((double)o->scalex()/1000)),
 					(int)(Tex->Height() * ((double)o->scaley() / 1000))
-				};	
+				};
 			case KthuraKind::Pivot:
 			case KthuraKind::Exit:
+			case KthuraKind::Custom:
 				// Editors will need it this way and it's also recommended to only use this for editors!
 				return { o->x() - 5,o->y() - 5, 11, 11 };
 			default:
@@ -308,9 +332,9 @@ namespace Slyvina {
 
 #pragma endregion
 
-		
-		
-#pragma region Initization		
+
+
+#pragma region Initization
 		void TQSGKthuraFont(TImageFont F) { EdtFont = F; }
 
 

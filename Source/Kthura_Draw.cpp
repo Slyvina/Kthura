@@ -1,3 +1,26 @@
+// License:
+// 	Kthura/Source/Kthura_Draw.cpp
+// 	Kthura Draw
+// 	version: 25.03.01
+// 
+// 	Copyright (C) 2015-2022, 2023, 2025 Jeroen P. Broks
+// 
+// 	This software is provided 'as-is', without any express or implied
+// 	warranty.  In no event will the authors be held liable for any damages
+// 	arising from the use of this software.
+// 
+// 	Permission is granted to anyone to use this software for any purpose,
+// 	including commercial applications, and to alter it and redistribute it
+// 	freely, subject to the following restrictions:
+// 
+// 	1. The origin of this software must not be misrepresented; you must not
+// 	   claim that you wrote the original software. If you use this software
+// 	   in a product, an acknowledgment in the product documentation would be
+// 	   appreciated but is not required.
+// 	2. Altered source versions must be plainly marked as such, and must not be
+// 	   misrepresented as being the original software.
+// 	3. This notice may not be removed or altered from any source distribution.
+// End License
 // Lic:
 // Kthura/Source/Kthura_Draw.cpp
 // Kthura Draw
@@ -25,15 +48,16 @@
 
 namespace Slyvina {
 	namespace Kthura {
-		void _KthuraDraw::DrawObject(KthuraObject* o, int insx, int insy) {
+		bool _KthuraDraw::DrawObject(KthuraObject* o, int insx, int insy) {
+			bool ret{false};
 			if (!AllowDraw.count(o->Kind())) AllowDraw[o->Kind()]=false;
 #ifdef KTHDRAWDEBUG
 			printf("Object #%d (%s); AllowKind: %d; Visible: %d\n", o->ID(), o->SKind().c_str(), AllowDraw[o->Kind()], o->visible());
 #endif
-			if (o->Kind() == KthuraKind::Actor) {				
+			if (o->Kind() == KthuraKind::Actor) {
 				//int oldx{ o->x() };
-				//int oldy{ o->y() };				
-				o->UpdateMoves();
+				//int oldy{ o->y() };
+				ret = o->UpdateMoves() || ret;
 				// actorsmoved = actorsmoved || oldx != x || oldy != y;
 			} else {
 				Animate(o);
@@ -47,6 +71,7 @@ namespace Slyvina {
 #endif
 				DrawFuncs[o->Kind()](o, insx, insy);
 			}
+			return ret;
 		}
 
 		_KthuraDraw::_KthuraDraw(std::map<KthuraKind, FKthuraDrawObject> DF, std::map<KthuraKind, bool> AD, FKthuraSize Sz, FKthuraFrames Fr) {
@@ -91,7 +116,7 @@ namespace Slyvina {
 			case KthuraKind::Exit:
 			case KthuraKind::Pivot:
 			case KthuraKind::Custom:
-				if (CheckPivotExitSelf) return _ObstacleSize(o);
+				//Void, for now! if (CheckPivotExitSelf) return _ObstacleSize(o);
 				return { o->x(),o->y(),0,0 };
 			}
 			return KthuraRect();
@@ -124,7 +149,7 @@ namespace Slyvina {
 			default:
 				return 1;
 			}
-			
+
 		}
 
 		void _KthuraDraw::Animate(KthuraObject* o) {
@@ -142,10 +167,12 @@ namespace Slyvina {
 #ifdef KTHDRAWDEBUG
 			printf("Draw Layer\n");
 #endif
+			bool NeedDomUpdate{false};
 			for (auto o = L->DomFirst; o; o= o->DomNext) {
 				//std::cout << (int)L->DomFirst << "\t" << (int)o << "\t" << o->DomNext << " \n"; // debug
-				DrawObject(o, insx, insy);
+				NeedDomUpdate = DrawObject(o, insx, insy) || NeedDomUpdate; // DrawObject must be first or it will be ignored once NeedDomUpdate is true
 			}
+			if (NeedDomUpdate) L->RemapDominance();
 		}
 	}
 }

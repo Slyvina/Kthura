@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Source/Kthura_Compiler.cpp
 // 	Kthura Compiler
-// 	version: 25.01.06
+// 	version: 25.01.17
 // 
 // 	Copyright (C) 2024, 2025 Jeroen P. Broks
 // 
@@ -84,7 +84,7 @@ namespace Slyvina {
 				for (auto k : _tDict) D[k.first] = idx++;
 				if (idx > 0xff) S = 2;
 				if (idx > 0xffff) S = 4;
-				if (idx > 0xffffffff) S = 8;				
+				if (idx > 0xffffffff) S = 8;
 			}
 		};
 
@@ -232,7 +232,7 @@ namespace Slyvina {
 			JB->Close();
 		}
 
-		void Slyvina::Kthura::Compile(Kthura kmap, std::string Jout, std::string prefix) {
+		void Compile(Kthura kmap, std::string Jout, std::string prefix) {
 			auto J{ JCR6::CreateJCR6(Jout,CompileStorage) };
 			Compile(kmap, J, prefix);
 			J->Close();

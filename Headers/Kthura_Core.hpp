@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Headers/Kthura_Core.hpp
 // 	Slyvina - Kthura Core (header)
-// 	version: 25.01.06
+// 	version: 25.03.01
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -42,7 +42,7 @@ namespace Slyvina {
 		class _Kthura; // NEVER us this class directly, but always use UKthura or Kthura in stead!!!
 
 		typedef std::unique_ptr<_Kthura> UKthura; // Type used to store a Kthura map at a unique pointer
-		typedef std::shared_ptr<_Kthura> Kthura; // Type used to store a Kthura map to a shared pointer. 
+		typedef std::shared_ptr<_Kthura> Kthura; // Type used to store a Kthura map to a shared pointer.
 
 		typedef Kthura(*KthuraLoader)(Slyvina::JCR6::JT_Dir J, std::string prefix);
 		typedef bool(*KthuraRecognizer)(Slyvina::JCR6::JT_Dir J, std::string prefix);
@@ -53,7 +53,7 @@ namespace Slyvina {
 		/// <summary>
 		/// If set to TRUE. The deprecated ALPHA tag will be read and only lead to a warning. (Done for KthuraTransfer).
 		/// </summary>
-		extern bool OldAlpha; 
+		extern bool OldAlpha;
 
 		/// <summary>
 		/// If set to TRUE dupe tags will automatically be fixed. Only handy for transfer tools or fixing tools.
@@ -125,7 +125,10 @@ namespace Slyvina {
 			inline KthuraLayer* Parent() { return _parent; }
 			void __KillMe(bool DisposeMe=false); // NEVER use this directly! ALWAYS let the kill commands of the Kthura Layer do this.
 			inline int64 ID() { return _ID; }
+			// Returns Object Kind
 			inline KthuraKind Kind() { return _Kind; }
+			// ONLY use when you KNOW what you are doing!!!
+			inline void Kind(KthuraKind k) { _Kind = k; }
 			inline void IKind(KthuraKind K) { if (_Kind == KthuraKind::Unknown) _Kind = K; }
 			std::string SKind();
 			void SKind(std::string k);
@@ -157,7 +160,7 @@ namespace Slyvina {
 			KthuraProp(int32, scaley);
 			KthuraProp(int32, rotatedeg); KthuraPropAlias(int32, rotatedeg, rotate);
 			KthuraProp(double, rotaterad);
-			KthuraProp(int32, blend);			
+			KthuraProp(int32, blend);
 			void data(std::string,std::string);
 			std::string data(std::string);
 			std::map<std::string, std::string>* data();
@@ -184,7 +187,7 @@ namespace Slyvina {
 			void MoveTo(int x, int y);
 			void MoveTo(KthuraObject* o);
 			void MoveTo(std::string T);
-			void UpdateMoves();
+			bool UpdateMoves();
 			static KthuraObject* Spawn(KthuraLayer* parent, std::string spot);
 			static KthuraObject* Spawn(KthuraLayer* parent, int x, int y, std::string wind = "North", byte R = 255, byte G = 255, byte B = 255, byte alpha = 255, int Dominance = 20);
 			int PathLength();
@@ -213,7 +216,7 @@ namespace Slyvina {
 			bool* _BlockMap{ new bool[1] };
 			void BlockMap(int x, int y, bool v);
 			bool BlockMap(int x, int y);
-		public:			
+		public:
 			bool DontKill{false};
 			KthuraObject* DomFirst{ nullptr };
 			uint32
@@ -221,8 +224,9 @@ namespace Slyvina {
 				gridy{ 32 };
 			KthuraObject* NewObject(KthuraKind k);
 			KthuraObject* NewObject(std::string knd);
+			void ViewLabelMap(); // Debug only!
 			void PerformAutoRemap();
-			inline void __setparent(_Kthura* ouwe) { if (!_parent) _parent = ouwe; } // Only works when not yet initized. Not for direct use			
+			inline void __setparent(_Kthura* ouwe) { if (!_parent) _parent = ouwe; } // Only works when not yet initized. Not for direct use
 			void Kill(KthuraObject* obj);
 			void Kill(std::string Tag,bool ignorenonexistent=true);
 			void KillAllObjects();
@@ -239,7 +243,7 @@ namespace Slyvina {
 			inline int BlockHeight() { return _BlockH; }
 			void BuildBlockmap();
 			void VisibilityByLabel(std::string Label, bool value);
-			void VisibilityButLabel(std::string Label, bool value);			
+			void VisibilityButLabel(std::string Label, bool value);
 			inline void HideByLabel(std::string L) { VisibilityByLabel(L, false); }
 			inline void ShowByLabel(std::string L) { VisibilityByLabel(L, true); }
 			inline void HideButLabel(String L) { VisibilityButLabel(L, false); }
@@ -251,7 +255,7 @@ namespace Slyvina {
 			KthuraObject* NewObstacle(int32 x = 0, int32 y = 0, std::string Texture = "", std::string Tag = "");
 			inline ~KthuraLayer() { if (!DontKill) { KillAllObjects(); delete[] _BlockMap; } }
 			inline static void AutoRemap(bool onoff) { _autoRemap = onoff; /*PerformAutoRemap();*/ }
-			inline static bool AutoRemap() { return _autoRemap; }	
+			inline static bool AutoRemap() { return _autoRemap; }
 			inline KthuraObject* Spawn(std::string spot) { return KthuraObject::Spawn(this, spot); }
 			inline KthuraObject* Spawn(int x, int y) { return KthuraObject::Spawn(this, x, y); }
 			inline KthuraObject* operator[](std::string otag) { return Obj(otag); }
@@ -261,6 +265,7 @@ namespace Slyvina {
 			inline VecString Tags() {
 				auto vec{ NewVecString() };
 				Tags(vec);
+				return vec;
 			}
 		};
 

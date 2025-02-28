@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Source/Kthura_Core.cpp
 // 	Slyvina - Kthura Core
-// 	version: 25.01.06
+// 	version: 25.03.01
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -34,7 +34,7 @@
 
 #define KthuraObjVal(type,prop) void KthuraObject::prop(type v) {_Obj->prop=v;} type KthuraObject::prop() {return _Obj->prop;}
 #define KthuraObjValRP(type,prop) void KthuraObject::prop(type v) {_Obj->prop=v; _parent->PerformAutoRemap();} type KthuraObject::prop() {return _Obj->prop;}
-#define KthuraObjValDefFunc(type,prop)  type KthuraObject::prop() { return _Obj->prop;} void KthuraObject::prop(type value) 
+#define KthuraObjValDefFunc(type,prop)  type KthuraObject::prop() { return _Obj->prop;} void KthuraObject::prop(type value)
 
 #define KthuraActVal(type,prop,propstring,eval) \
 	void KthuraObject::prop(type v) {\
@@ -163,10 +163,10 @@ namespace Slyvina {
 		}
 
 		void KthuraLayer::Kill(KthuraObject* k) {
-			if (k->Parent() != this) { 
+			if (k->Parent() != this) {
 				//throw runtime_error("Alien object kill: " + to_string(k->ID()) + "::" + k->Tag() + "::" + k->SKind());
-				Paniek("Alien object kill requested!"); 
-				return; 
+				Paniek("Alien object kill requested!");
+				return;
 			}
 			if (_firstObject == k) _firstObject = _firstObject->Next();
 			if (!k->Next()) _lastObject = k->Prev();
@@ -231,8 +231,11 @@ namespace Slyvina {
 			_LabelMap.clear();
 			for (auto o = _firstObject; o; o = o->Next()) {
 				if (o->labels().size()) {
-					auto l{ Split(Upper(o->labels()),';') };
-					for (auto& lb : *l) _LabelMap[lb].push_back(o);
+					auto l{ Split(Upper(o->labels()),',') };
+					for (auto& lb : *l) {
+						//std::cout<< "Label: " << l->size() << ": "<<lb<<"\n";
+						_LabelMap[lb].push_back(o);
+					}
 				}
 			}
 		}
@@ -269,7 +272,7 @@ namespace Slyvina {
 
 		void KthuraLayer::BuildBlockmap() {
 
-			// No need to reinvent the wheel. 
+			// No need to reinvent the wheel.
 			// This has been copied from my original C# class and been adapted to the current Slyvina version.
 
 			// KthuraObject O;
@@ -318,7 +321,7 @@ namespace Slyvina {
 			_BlockMap = new bool[(BoundY + 1) * (BoundX + 1)]; //BlockMap = new bool[BoundX + 1, BoundY + 1];
 			for (int i = 0; i < (BoundY + 1) * (BoundX + 1); ++i) _BlockMap[i] = false; // Must be sure all is false before starting
 
-			// And now for the REAL work.		
+			// And now for the REAL work.
 			for (KthuraObject* O = FirstObject(); O; O = O->Next()) { //foreach(KthuraObject O in Objects) {
 				if (O->impassible()) {
 					//Debug.WriteLine($"Checking object {O.kind}; {O.Texture}; {O.Labels}");
@@ -385,7 +388,7 @@ namespace Slyvina {
 					}
 				}
 			}
-			// And this will force a way open if applicable	
+			// And this will force a way open if applicable
 			for (KthuraObject* O = FirstObject(); O; O = O->Next()) { //foreach(KthuraObject O in Objects) {
 				if (O->forcepassible()) {
 					//Debug.WriteLine($"Checking object {O.kind}; {O.Texture}; {O.Labels}");
@@ -531,11 +534,23 @@ namespace Slyvina {
 			}
 		}
 
+		void KthuraLayer::ViewLabelMap() {
+			//for(auto& lm:_LabelMap) {
+			//	std::cout <<
+			//		"\x1b[96mLabel \x1b[x93m" <<
+			//		lm <<
+			//		"\x1b[96 has \x1b[94m" <<
+			//		lm.size() <<
+			//		"\x1b[96 objects!x1b[97m\n";
+			//}
+		}
+
 
 		KthuraObject* KthuraLayer::Obj(uint64 i) {
 			if (HasID(i)) return IDMap[i];
 			Paniek("Object doesn't exist", "Object ID:#" + to_string(i));
 		}
+
 		KthuraObject* KthuraLayer::Obj(std::string _tag) {
 			if (Prefixed(_tag, "%")) return Obj(ToUInt(_tag.substr(1)));
 			if (HasTag(_tag)) return TagMap[Upper(_tag)];
@@ -553,7 +568,7 @@ namespace Slyvina {
 				w{ 0 },
 				h{ 0 },
 				animspeed{ -1 },
-				
+
 				insertx{ 0 },
 				inserty{ 0 },
 				scalex{ 1000 },
@@ -626,7 +641,7 @@ namespace Slyvina {
 		void KthuraObject::__KillMe(bool DisposeMe) {
 			if (_prev) _prev->_next = _next;
 			if (_next) _next->_prev = _prev;
-			if (DisposeMe) delete this;			
+			if (DisposeMe) delete this;
 			if (KthuraLayer::AutoRemap()) _parent->TotalRemap();
 		}
 
@@ -725,7 +740,7 @@ namespace Slyvina {
 		}
 
 		KthuraObject* KthuraObject::Spawn(KthuraLayer* parent, std::string spot) {
-			auto ret{ parent->NewObject(KthuraKind::Actor) }; //var ret = new KthuraActor(parent);			
+			auto ret{ parent->NewObject(KthuraKind::Actor) }; //var ret = new KthuraActor(parent);
 			if (!parent->HasTag(spot)) {
 				std::cout << "\nWARNING! I cannot spawn an actor on not existent spot " << spot << "\n";
 				return nullptr;
@@ -770,7 +785,7 @@ namespace Slyvina {
 		int KthuraObject::CWalkX() {
 			if (!_Act) return 0;
 			if (_Act->Walking) return _Act->FoundPath[_Act->PathIndex].x;
-			return 0;			
+			return 0;
 		}
 
 		int KthuraObject::CWalkY() {
@@ -787,7 +802,7 @@ namespace Slyvina {
 		}
 
 		void KthuraObject::WalkTo(int to_x, int to_y, bool real) {
-			//printf("_Act = %d\n", _Act!=nullptr); 
+			//printf("_Act = %d\n", _Act!=nullptr);
 			if (!_Act) return;
 			auto gridx = _parent->gridx;
 			auto gridy = _parent->gridy;
@@ -832,7 +847,8 @@ namespace Slyvina {
 			_Act->Moving = false;
 		}
 
-		void KthuraObject::UpdateMoves() {
+		bool KthuraObject::UpdateMoves() {
+			bool ret{false};
 			if (_Act->Moving || _Act->Walking) {
 				if (_Act->MoveY < _Obj->y) { _Obj->y -= _Act->MoveSkip; if (_Obj->y < _Act->MoveY) _Obj->y = _Act->MoveY; if (_Act->AutoWind) _Act->Wind = "North"; }
 				if (_Act->MoveY > _Obj->y) { _Obj->y += _Act->MoveSkip; if (_Obj->y > _Act->MoveY) _Obj->y = _Act->MoveY; if (_Act->AutoWind) _Act->Wind = "South"; }
@@ -867,11 +883,12 @@ namespace Slyvina {
 			if (_Act) {
 				//cout << "DEBUG: AutoDom:" << _Act->WalkAutoDom << " OldY: " << _Act->WalkAutoDomOldY << "Y: "<<_Obj->y << endl; // DEBUG
 				if (_Act->WalkAutoDom && abs(_Act->WalkAutoDomOldY - _Obj->y) > 50) {
-					_parent->RemapDominance();
+					//_parent->RemapDominance();
+					ret=true;
 					_Act->WalkAutoDomOldY = _Obj->y;
 				}
 			}
-
+			return ret;
 		}
 
 
@@ -901,13 +918,14 @@ namespace Slyvina {
 		KthuraKind KindName(std::string s) {
 			if (!s.size()) return KthuraKind::Unknown;
 			if (s[0] == '$') return KthuraKind::Custom;
+			if (s=="Pic") return KthuraKind::Picture;
 			for (auto& kn : _KindName) {
 				if (Upper(s) == Upper(kn.second)) return kn.first;
 			}
 			return KthuraKind::Unknown;
 		}
-		std::string KthuraObject::SKind() { 
-			if (_Kind == KthuraKind::Custom) return CustomKind; else return KindName(_Kind); 
+		std::string KthuraObject::SKind() {
+			if (_Kind == KthuraKind::Custom) return CustomKind; else return KindName(_Kind);
 		}
 		void KthuraObject::SKind(std::string k) {
 			_Kind = KindName(k);
@@ -933,7 +951,7 @@ namespace Slyvina {
 			if (prefix.size() && (!Suffixed(prefix, "/"))) prefix += "/";
 			if (!Resource->EntryExists(prefix + "Data")) { Paniek("JCR6 resource doesn't appear to have the '" + prefix + "Data' entry that Kthura needs"); return; }
 			if (!Resource->EntryExists(prefix + "Objects")) { Paniek("JCR6 resource doesn't appear to have the '" + prefix + "Objects' entry that Kthura needs"); return; }
-			auto entries{ Resource->Entries() };			
+			auto entries{ Resource->Entries() };
 			for (auto ent : *entries) {
 				auto
 					uename{ Upper(ent->Name()) },
@@ -1103,10 +1121,10 @@ namespace Slyvina {
 								} else { Paniek("Unknown field!", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
 							}
 						}
-						//if (cl) cl->AutoRemap(true);						
+						//if (cl) cl->AutoRemap(true);
 						auto L{ Layers() };
 						for (auto arl : *L) Layer(arl)->AutoRemap(true);
-						
+
 					} else if (nu == "OPTIONS") {
 						//cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
 						Options = ParseUGINIE(Resource->GetString(prefix + "Options"));
@@ -1149,7 +1167,7 @@ namespace Slyvina {
 			NR->Recognize = KR;
 		}
 
-		std::string XRecognizeKthura(Slyvina::JCR6::JT_Dir J, std::string prefix) {			
+		std::string XRecognizeKthura(Slyvina::JCR6::JT_Dir J, std::string prefix) {
 			for (auto XRK : RegKthuraLoader) {
 				if (XRK.second.Recognize(J, prefix)) return XRK.first;
 			}
