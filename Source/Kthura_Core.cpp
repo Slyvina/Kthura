@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Source/Kthura_Core.cpp
 // 	Slyvina - Kthura Core
-// 	version: 25.03.01
+// 	version: 25.04.30
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -549,6 +549,7 @@ namespace Slyvina {
 		KthuraObject* KthuraLayer::Obj(uint64 i) {
 			if (HasID(i)) return IDMap[i];
 			Paniek("Object doesn't exist", "Object ID:#" + to_string(i));
+			return nullptr;
 		}
 
 		KthuraObject* KthuraLayer::Obj(std::string _tag) {
@@ -761,6 +762,50 @@ namespace Slyvina {
 			return ret;
 		}
 
+		bool KthuraObject::InMe(KthuraObject*O) {
+			switch(O->Kind()) {
+				case KthuraKind::Zone:
+				case KthuraKind::Rect:
+				case KthuraKind::TiledArea:
+				case KthuraKind::StretchedArea:
+					return InMe(O->x(),O->y()) && InMe(O->x()+O->w(),O->y()+O->h());
+					break;
+				default:
+					return InMe(O->x(),O->y());
+			}
+
+		}
+
+		void KthuraLayer::HideByZone(KthuraObject* Zone, bool outside) {
+			switch(Zone->Kind()) {
+				case KthuraKind::Zone:
+				case KthuraKind::Rect:
+				case KthuraKind::TiledArea:
+				case KthuraKind::StretchedArea:
+					for(auto o=FirstObject();o;o=o->Next()) {
+						auto iz{Zone->InMe(o)};
+						if (iz)	o->visible(outside?iz:!iz);
+					} break;
+				default:
+					std::cout << "\x1b[31mERROR!>\x1b[37m Object kind cannot be used for HideByZone()!\n";
+			}
+		}
+
+		void KthuraLayer::ShowByZone(KthuraObject* Zone, bool outside) {
+			switch(Zone->Kind()) {
+				case KthuraKind::Zone:
+				case KthuraKind::Rect:
+				case KthuraKind::TiledArea:
+				case KthuraKind::StretchedArea:
+					for(auto o=FirstObject();o;o=o->Next()) {
+						auto iz{Zone->InMe(o)};
+						if (iz) o->visible(outside?!iz:iz);
+					} break;
+				default:
+					std::cout << "\x1b[31mERROR!>\x1b[37m Object kind cannot be used for HideByZone()!\n";
+			}
+		}
+
 		KthuraObject* KthuraObject::Spawn(KthuraLayer* parent, int x, int y, std::string wind, byte R, byte G, byte B, byte alpha, int Dominance) {
 			auto ret{ parent->NewObject(KthuraKind::Actor) };
 			ret->x(x);
@@ -964,7 +1009,7 @@ namespace Slyvina {
 						Chat("Reading Data");
 						MetaData = Resource->GetStringMap(prefix + "Data");
 						if ((!MetaData) || Last()->Error) {
-							Paniek("Something went wrong reading data", "JCR6:" + Last()->ErrorMessage); return;
+							Paniek("Something went wrong reading data", "JCR6:" + Last()->ErrorMessage+" ("+Last()->MainFile+" -> "+Last()->Entry+")"); return;
 						}
 					} else if (nu == "OBJECTS") {
 						Chat("Reading objects");

@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Headers/Kthura_Core.hpp
 // 	Slyvina - Kthura Core (header)
-// 	version: 25.03.01
+// 	version: 25.04.30
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -134,6 +134,7 @@ namespace Slyvina {
 			void SKind(std::string k);
 			bool HasLabel(std::string L);
 
+
 			// Yeah, these are quick defintions done by macros.
 			// I do NOT need you to tell me that this is bad practise, because I already know and I don't care!
 			KthuraProp(std::string, Tag);
@@ -199,6 +200,11 @@ namespace Slyvina {
 			void WalkTo(std::string oTag);
 			void StopWalking();
 			void StopMoving();
+
+
+			inline bool InMe(int32 _X,int32 _Y) { return _X>=x() && _Y>=y() && _X<=x()+w() && _Y<=y()+h(); }
+			bool InMe(KthuraObject*O);
+
 		};
 
 		class KthuraLayer {
@@ -224,6 +230,12 @@ namespace Slyvina {
 				gridy{ 32 };
 			KthuraObject* NewObject(KthuraKind k);
 			KthuraObject* NewObject(std::string knd);
+			void HideByZone(KthuraObject* Zone,bool outside=false);
+			inline void HideByZone(uint64 ZoneID) { HideByZone(IDMap[ZoneID]); }
+			inline void HideByZone(std::string ZoneTag,bool outside=false) { HideByZone(TagMap[Units::Upper(ZoneTag)],outside);}
+			void ShowByZone(KthuraObject* Zone,bool outside=false);
+			inline void ShowByZone(uint64 ZoneID, bool outside=false) { ShowByZone(IDMap[ZoneID],outside); }
+			inline void ShowByZone(std::string ZoneTag,bool outside=false) { ShowByZone(TagMap[Units::Upper(ZoneTag)],outside);}
 			void ViewLabelMap(); // Debug only!
 			void PerformAutoRemap();
 			inline void __setparent(_Kthura* ouwe) { if (!_parent) _parent = ouwe; } // Only works when not yet initized. Not for direct use
