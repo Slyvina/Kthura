@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Headers/Kthura_Core.hpp
 // 	Slyvina - Kthura Core (header)
-// 	version: 25.04.30
+// 	version: 25.05.26
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -250,6 +250,9 @@ namespace Slyvina {
 			void RemapTags();
 			void RemapLabels();
 			void RemapDominance();
+			void VisibilityAll(bool show);
+			inline void HideAll() {VisibilityAll(false);}
+			inline void ShowAll() {VisibilityAll(true);}
 			bool Block(int x, int y);
 			inline int BlockWidth() { return _BlockW; }
 			inline int BlockHeight() { return _BlockH; }

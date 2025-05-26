@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Source/Kthura_Core.cpp
 // 	Slyvina - Kthura Core
-// 	version: 25.04.30
+// 	version: 25.05.26
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -160,6 +160,10 @@ namespace Slyvina {
 			} else if (!_autoRemap) {
 				_modified = true;
 			}
+		}
+
+		void KthuraLayer::VisibilityAll(bool v) {
+			for (auto o=FirstObject();o;o=o->Next()) o->visible(v);
 		}
 
 		void KthuraLayer::Kill(KthuraObject* k) {
