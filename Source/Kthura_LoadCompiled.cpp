@@ -1,9 +1,9 @@
 // License:
 // 	Kthura/Source/Kthura_LoadCompiled.cpp
 // 	Compiled Kthura Map Leader
-// 	version: 25.01.13
+// 	version: 26.05.08
 // 
-// 	Copyright (C) 2024, 2025 Jeroen P. Broks
+// 	Copyright (C) 2024, 2025, 2026 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -38,7 +38,10 @@ using namespace Slyvina::Units;
 namespace Slyvina {
 	namespace Kthura {
 
+
+
 		static std::string _ErrorLog{};
+		LCKPCB LoadCompiledKthuraProcessCallBack{nullptr}; // global
 
 #pragma region "The REAL stuff"
 
@@ -49,7 +52,7 @@ namespace Slyvina {
 			Byte Siz{ BT->ReadByte() }; Chat("GetDictString: Size: " << (int)Siz << TrSPrintF(" (Position %d::%x)",BT->Position(), BT->Position()));
 			switch (Siz) {
 			case 0: return BT->ReadString();
-			case 1: 
+			case 1:
 #ifdef KTHURA_LOADCOMPILED_DEBUG
 			{
 				int idx = BT->ReadByte();
@@ -66,6 +69,8 @@ namespace Slyvina {
 			default: _ErrorLog = TrSPrintF("Unknown string dictionary index size (%d)",Siz); return "???";
 			}
 		}
+
+		uint32 LoadCompiledKthuraCallBackTagCount{2500};
 		static void _TrueLoadCompiledKthura(_Kthura* K,JCR6::JT_Dir D, std::string prefix) {
 			_ErrorLog = "";
 			if (prefix.size() && (!Suffixed(prefix, "/"))) prefix += "/";
@@ -82,7 +87,7 @@ namespace Slyvina {
 			std::map < uint64, std::string> Dict{};
 			while (!BT->AtEnd()) {
 				Chat("Dictionary " << BT->Position() << "/" << BT->Size());
-				auto Tag{ BT->ReadByte() }; 
+				auto Tag{ BT->ReadByte() };
 				if (!Tag) break;
 				switch (Tag) {
 				case 1:	size = BT->ReadByte(); break;
@@ -108,7 +113,13 @@ namespace Slyvina {
 			KthuraObject* O{ nullptr };
 			auto LTag{ BT->ReadByte() };
 			std::string LayName{};
+			static uint32 callbackcnt{0};
+			uint32 cntlayers{0},cntlobj{0},cnttobj{0};
 			while (LTag) {
+				if (LoadCompiledKthuraProcessCallBack) {
+					callbackcnt = (callbackcnt + 1) % std::max(LoadCompiledKthuraCallBackTagCount,5u);
+					if (callbackcnt==0) LoadCompiledKthuraProcessCallBack(cntlayers,cntlobj,cnttobj);
+				}
 				Chat("Compiled Object Command Tag: " << (int)LTag << "\tPos:" << BT->Position() - 1);
 				if ((!L) && LTag != 1) { _ErrorLog = "No layer"; return; }
 				if ((!O) && LTag != 1 && LTag!=2 && LTag!=255) { _ErrorLog = "No objext"; return; }
@@ -116,6 +127,8 @@ namespace Slyvina {
 				case 1:
 					LayName = BT->ReadString();
 					if (!K->HasLayer(LayName)) {
+						cntlayers++;
+						cntlobj=0;
 						Chat("Creating Layer " << LayName);
 						L = K->NewLayer(LayName);
 					} else {
@@ -127,6 +140,8 @@ namespace Slyvina {
 					L->gridy = 32;
 					break;
 				case 2: {
+					cntlobj++;
+					cnttobj++;
 					std::string _kind; _kind = WR();
 					Chat("Creating object: " << _kind << " (" << (int)KindName(_kind) << ")");
 					//O = L->NewObject(KindName(_kind));
@@ -244,6 +259,6 @@ namespace Slyvina {
 
 		bool IsCompiledKthura(JCR6::JT_Dir D,std::string prefix) {			return _RCXLRecognize(D,prefix);		}
 
-#pragma endregion 
+#pragma endregion
 	}
 }
