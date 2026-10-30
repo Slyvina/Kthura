@@ -1,7 +1,7 @@
 // License:
 // 	Kthura/Source/Kthura_Draw_TQSG.cpp
 // 	Kthura Draw TQSG driver
-// 	version: 26.02.18
+// 	version: 26.05.08
 // 
 // 	Copyright (C) 2023, 2025, 2026 Jeroen P. Broks
 // 
@@ -52,6 +52,8 @@ namespace Slyvina {
 
 
 	namespace Kthura {
+
+		bool IgnoreOutOfBounds{false};
 
 #pragma region "Error Management"
 		static void DefaultCrash(std::string m) {
@@ -164,6 +166,16 @@ namespace Slyvina {
 				o->alpha()
 			);
 		}
+		inline void Blnd(KthuraObject*o) {
+			//*
+			switch(o->blend()) {
+				case 3: SetBlend(Blend::Alpha); break;
+				case 4: SetBlend(Blend::Additive); break;
+				default: SetBlend(Blend::Alpha); break;
+			}
+			//*/
+		}
+		inline void Blnd(){ SetBlend(Blend::Alpha);  }
 
 		static void _Obstacle(KthuraObject* o, int ScrollX, int ScrollY) {
 			auto scx{ (double)o->scalex() / 1000 };
@@ -171,7 +183,9 @@ namespace Slyvina {
 			auto Tex{ MyTexture::Tex(o->Kind(),o->texture()) };
 			Chat("Obstacle!");
 			Col(o);
+			Blnd(o);
 			SetScale(scx, scy);
+
 			Rotate(o->rotatedeg());
 #ifdef KD_TQSG_DEBUG
 			printf("Draw (%4d,%4d) (%d)   %dx%d(%f,%f);  #%02X%02X%02X(%d)\n", o->x() - ScrollX, o->y() - ScrollY, o->animframe(),o->scalex(),o->scaley(),scx,scy,o->red(),o->green(),o->blue(),o->alpha());
@@ -180,15 +194,19 @@ namespace Slyvina {
 				DrvCrash(TrSPrintF("Obstacle (%d) appears to have no valid texture! (%s)",o->ID(),o->texture()));
 				return;
 			}
-			Tex->XDraw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
+			if ((!IgnoreOutOfBounds) || o->animframe()<Tex->Frames())
+				Tex->XDraw(o->x() - ScrollX, o->y() - ScrollY, o->animframe());
 			//if (!(KeyDown(SDLK_SPACE))) { Flip(); do { Poll(); } while (!KeyDown(SDLK_SPACE)); } // DEBUG!
 			SetScale(1);
+			Blnd();
 			Rotate(0);
 		}
 
 		static void _Rect(KthuraObject* o, int ScrollX, int ScrollY) {
 			Col(o);
+			Blnd(o);
 			ARect(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h());
+			Blnd();
 			// Please note! ARect and not Rect. This driver is meant to keep alternate screens into account and Rect doesn't do that.
 		}
 
@@ -202,11 +220,15 @@ namespace Slyvina {
 		static void _Tiled(KthuraObject* o, int ScrollX, int ScrollY) {
 			auto Tex{ MyTexture::Tex(KthuraKind::TiledArea,o->texture()) };
 			Col(o);
+			Blnd(o);
 			if (!Tex) {
 				DrvCrash(TrSPrintF("Tiled Area (%d) appears to have no valid texture! (%s)", o->ID(), o->texture()));
 				return;
 			}
-			Tex->Tile(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe(), -o->insertx(), -o->inserty());
+			if (IgnoreOutOfBounds && o->animframe()<Tex->Frames()>=Tex->Frames()) o->animframe(0);
+			if ((!IgnoreOutOfBounds) || o->animframe()<Tex->Frames())
+				Tex->Tile(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe(), -o->insertx(), -o->inserty());
+			Blnd();
 		}
 
 		static void _Stretch(KthuraObject* o, int ScrollX, int ScrollY) {
@@ -216,7 +238,8 @@ namespace Slyvina {
 				DrvCrash(TrSPrintF("Stretched Area (%d)  appears to have no valid texture! (%s)", o->ID(), o->texture()));
 				return;
 			}
-			Tex->StretchDraw(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe());
+			if ((!IgnoreOutOfBounds) || o->animframe()<Tex->Frames())
+				Tex->StretchDraw(o->x() - ScrollX, o->y() - ScrollY, o->w(), o->h(), o->animframe());
 		}
 
 		static void Mark(int x, int y) {
