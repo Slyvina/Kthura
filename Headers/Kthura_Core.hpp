@@ -1,9 +1,9 @@
 // License:
 // 	Kthura/Headers/Kthura_Core.hpp
 // 	Slyvina - Kthura Core (header)
-// 	version: 25.05.26
+// 	version: 26.05.08
 // 
-// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025, 2026 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -59,6 +59,8 @@ namespace Slyvina {
 		/// If set to TRUE dupe tags will automatically be fixed. Only handy for transfer tools or fixing tools.
 		/// </summary>
 		extern bool AutoRetag;
+
+		extern bool IgnoreUnknown;
 
 
 		struct __KthuraObjectData;
@@ -282,6 +284,7 @@ namespace Slyvina {
 				Tags(vec);
 				return vec;
 			}
+			std::vector<KthuraObject*> CopyLabelMap(std::string L);
 		};
 
 
