@@ -1,9 +1,9 @@
 // License:
 // 	Kthura/Source/Kthura_Core.cpp
 // 	Slyvina - Kthura Core
-// 	version: 25.05.26
+// 	version: 26.10.30
 // 
-// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025, 2026 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -60,6 +60,8 @@ namespace Slyvina {
 
 		bool OldAlpha{ false };
 		bool AutoRetag{ false };
+
+		bool IgnoreUnknown{false};
 
 #pragma region "Loader Data"
 		struct RegKL { KthuraLoader Loader{ nullptr }; KthuraRecognizer Recognize{ nullptr }; };
@@ -538,6 +540,16 @@ namespace Slyvina {
 			}
 		}
 
+		vector<KthuraObject*> KthuraLayer::CopyLabelMap(std::string L) {
+			Trans2Upper(L);
+			vector<KthuraObject*> ret{};
+			if (_LabelMap.count(L)) {
+				auto LO{ &_LabelMap[L] };
+				for (auto o:*LO) ret.push_back(o);
+			}
+			return ret;
+		}
+
 		void KthuraLayer::ViewLabelMap() {
 			//for(auto& lm:_LabelMap) {
 			//	std::cout <<
@@ -643,11 +655,14 @@ namespace Slyvina {
 			_Kind = k;
 		}
 
+		//#define s(a) std::cout << a << "\n"
+		#define s(a)
 		void KthuraObject::__KillMe(bool DisposeMe) {
-			if (_prev) _prev->_next = _next;
-			if (_next) _next->_prev = _prev;
-			if (DisposeMe) delete this;
-			if (KthuraLayer::AutoRemap()) _parent->TotalRemap();
+			s("prev"); if (_prev) _prev->_next = _next;
+			s("next");if (_next) _next->_prev = _prev;
+			s("Remap" <<KthuraLayer::AutoRemap() ); if (KthuraLayer::AutoRemap()) _parent->TotalRemap();
+			s("Depose");if (DisposeMe) delete this;
+			s("Done");
 		}
 
 
@@ -966,7 +981,7 @@ namespace Slyvina {
 
 		KthuraKind KindName(std::string s) {
 			if (!s.size()) return KthuraKind::Unknown;
-			if (s[0] == '$') return KthuraKind::Custom;
+			if (s[0] == '$' || s=="Custom") return KthuraKind::Custom;
 			if (s=="Pic") return KthuraKind::Picture;
 			for (auto& kn : _KindName) {
 				if (Upper(s) == Upper(kn.second)) return kn.first;
@@ -978,7 +993,7 @@ namespace Slyvina {
 		}
 		void KthuraObject::SKind(std::string k) {
 			_Kind = KindName(k);
-			if (k[0] =='$') CustomKind = k;
+			if (k[0] =='$' || k=="Custom") CustomKind = k;
 			// cout << "DEBUG! Kind of Object #" << ID() << " is " << SKind() << "!\n"; // DEBUG ONLY!
 		}
 		bool KthuraObject::HasLabel(std::string L) {
@@ -1058,7 +1073,10 @@ namespace Slyvina {
 								if (fld == "KIND") {
 									I_Want_An_Object;
 									co->IKind(KindName(val));
-									if (co->Kind() == KthuraKind::Unknown) { Paniek("Unknown kind", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
+									if (co->Kind() == KthuraKind::Unknown) {
+										if (!IgnoreUnknown)
+											Paniek("Unknown kind", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str()));
+									}
 									if (co->Kind() == KthuraKind::Actor) { Paniek("Actors cannot be defined through loading", TrSPrintF("Line:%d;Instruction:%s", line, instruction.c_str())); }
 									if (co->Kind() == KthuraKind::Custom) co->CustomKind = val;
 								} else if (fld == "COORD") {
@@ -1178,7 +1196,7 @@ namespace Slyvina {
 						//cout << "OPTIONS NOT YET IMPLEMENTED! DATA WILL BE LOST!\n";
 						Options = ParseUGINIE(Resource->GetString(prefix + "Options"));
 					} else if (AllowUnknown) {
-						Chat("Loaded Uknown: " << n);
+                        Chat("Loaded Unknown: " << n);
 						Unknown[n] = Resource->B(ent->Name());
 					}
 				}
